@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.jiaozhu.earphonereciver.MainActivity">
+    android:orientation="horizontal">
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <EditText
-            android:id="@+id/mText"
+            android:id="@+id/mEdit"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_margin="10dp"
+            android:background="@android:color/transparent"
             android:gravity="top"
-            android:minHeight="400dp"
-            android:padding="10dp"
-            android:hint="复制需要朗读的文本到这里" />
+            android:hint="复制需要朗读的文本到这里"
+            android:padding="10dp" />
     </ScrollView>
 </LinearLayout>
