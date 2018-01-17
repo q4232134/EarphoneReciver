@@ -158,19 +158,22 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
      *  弹出可编辑对话框
      */
     private fun showEditDialog(position: Int? = null) {
-        var temp = position?.let { list[position] } ?: Bean("")
+        var temp = position?.let { list[it] } ?: Bean("")
         val build = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.view_content, null)
         val edit = view.findViewById<EditText>(R.id.mEdit)
         build.setView(view)
         //修改按钮事件
         val onPositive = DialogInterface.OnClickListener { _, _ ->
-            temp = Bean(edit.text.toString().filtered + if (position == null) "\n下一条" else "")
-            dao.replace(temp)
             if (position == null) {
+                temp = Bean(edit.text.toString().filtered + "\n下一条")
+                dao.replace(temp)
                 list.add(temp)
                 adapter.notifyItemInserted(list.size - 1)
             } else {
+                temp.content = edit.text.toString()
+                temp.title = Bean.getHead(temp.content)
+                dao.replace(temp)
                 adapter.notifyItemChanged(position)
             }
         }
