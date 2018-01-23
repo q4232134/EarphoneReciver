@@ -23,8 +23,8 @@ class TTsService : Service() {
         return binder
     }
 
-
     override fun onDestroy() {
+        binder.stop()
         binder.release()
         super.onDestroy()
     }
