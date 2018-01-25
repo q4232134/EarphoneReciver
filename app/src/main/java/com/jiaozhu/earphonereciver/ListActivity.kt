@@ -23,7 +23,6 @@ import com.jiaozhu.earphonereciver.comm.Preferences
 import com.jiaozhu.earphonereciver.comm.filtered
 import getDao
 import kotlinx.android.synthetic.main.activity_list.*
-import toast
 import java.util.*
 
 
@@ -38,13 +37,11 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
         PrefSupport.context = this
-        list = dao.getActiveBean()
         mRecyclerView.layoutManager = LinearLayoutManager(this)
         adapter = ListAdapter(list).apply { onItemClickListener = this@ListActivity }
         mRecyclerView.adapter = adapter
         initDrag()
         initService()
-        dealIntent(intent)
         mAdd.setOnClickListener {
             onAddClicked()
         }
@@ -187,26 +184,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         showEditDialog(position)
     }
 
-    override fun onNewIntent(intent: Intent) {
-        dealIntent(intent)
-    }
-
-
-    /**
-     * 处理请求
-     */
-    private fun dealIntent(intent: Intent) {
-        val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.replace("\\n", "\n")
-        if (text.isNullOrEmpty()) return
-        val model = Bean(text.filtered + "\n下一条")
-        if (list.contains(model)) {
-            toast("条目已存在")
-            return
-        }
-        list.add(model)
-        dao.replace(model)
-        adapter.notifyItemRangeInserted(list.size - 1, 1)
-    }
 
     override fun onItemChanged(position: Int) {
         if (position == -1) return
@@ -216,7 +193,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
 
     override fun onDestroy() {
         super.onDestroy()
-        ttsService?.stopSelf()
+        unbindService(connection)
     }
 
     private fun pickUpAnimation(view: View) {

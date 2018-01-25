@@ -16,17 +16,29 @@ class TTsService : Service() {
     private val binder = TTSBinder()
     private lateinit var tts: TTsUtil
     var callback: TTSImpActivity? = null
-    private val dao = getDao(Dao::class.java)
 
     override fun onBind(intent: Intent): IBinder {
         initTTs()
+        println("onBind" + intent.getStringExtra(Intent.EXTRA_TEXT))
         return binder
     }
+
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        println("onStartCommand" + intent.getStringExtra(Intent.EXTRA_TEXT))
+        return super.onStartCommand(intent, flags, startId)
+    }
+
 
     override fun onDestroy() {
         binder.stop()
         binder.release()
         super.onDestroy()
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        binder.stop()
+        binder.release()
+        return super.onUnbind(intent)
     }
 
     internal inner class TTSBinder : Binder() {
@@ -109,7 +121,8 @@ class TTsService : Service() {
     }
 
     companion object {
-        lateinit var list: MutableList<Bean>
+        private val dao = getDao(Dao::class.java)
+        var list: MutableList<Bean> = dao.getActiveBean()
 
         interface TTSImpActivity {
             fun onItemChanged(position: Int)
