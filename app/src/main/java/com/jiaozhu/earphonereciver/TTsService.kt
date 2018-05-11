@@ -19,12 +19,10 @@ class TTsService : Service() {
 
     override fun onBind(intent: Intent): IBinder {
         initTTs()
-        println("onBind" + intent.getStringExtra(Intent.EXTRA_TEXT))
         return binder
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        println("onStartCommand" + intent.getStringExtra(Intent.EXTRA_TEXT))
         return super.onStartCommand(intent, flags, startId)
     }
 

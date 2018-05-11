@@ -17,7 +17,9 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
     var tag: String? = null
     var listener: TTsListener? = null
     private var tts: TextToSpeech = TextToSpeech(context, this)
-    private val list: LinkedList<String> = LinkedList()
+    private val list: MutableList<String> = LinkedList()
+    private var current = 0
+    private val cacheLength = 1//缓存文本数量
     private var session: MediaSessionCompat? = null
     private var stopNotify = false//是否已发送停止通知标志，每次播放状态改变时重置，用于解决onStop调用多次的问题
     private var startNotify = false//是否已发送开始通知标志，每次播放状态改变时重置，用于解决onStart调用多次的问题
@@ -30,14 +32,16 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
             pause()
         }
     }
-    val isFinished get() = list.size == 0
+    val isFinished get() = current >= list.size - 1
     val handle: Handler = Handler(context.mainLooper)
 
     init {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onDone(p0: String) {
-                list.removeAt(0)
-                if (list.size == 0) {
+                current = p0.toInt()
+                speak(current + cacheLength + 1)
+                if (isFinished) {
+                    isPlaying = false
                     handle.post {
                         listener?.onFinish(tag)
                     }
@@ -66,9 +70,15 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         initMedia()
     }
 
+    /**
+     * 准备播放
+     * @param   tag 标题
+     * @param   content 内容
+     */
     fun proper(tag: String?, content: String) {
         this.tag = tag
         dealTextMessage(content)
+        current = 0
         getFocus()
     }
 
@@ -77,7 +87,9 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
      */
     private fun start() {
         tts.stop()
-        list.forEachIndexed { index, it -> tts.speak(it, TextToSpeech.QUEUE_ADD, null, index.toString()) }
+        for (i in 0..cacheLength) {
+            speak(current + i)
+        }
         getFocus()
     }
 
@@ -95,6 +107,16 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         isPlaying = false
         list.clear()
         listener?.onCancel(tag)
+    }
+
+    /**
+     * 播放指定位置的文本
+     * @return  播放是否成功
+     */
+    private fun speak(index: Int): Boolean {
+        val str = list.getOrNull(index) ?: return false
+        tts.speak(str, TextToSpeech.QUEUE_ADD, null, index.toString())
+        return true
     }
 
     /**

@@ -186,9 +186,9 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
 
 
     override fun onItemChanged(position: Int) {
+        checkStatus()
         if (position == -1) return
         adapter.notifyItemChanged(position)
-        checkStatus()
     }
 
     override fun onDestroy() {
