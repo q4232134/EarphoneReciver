@@ -79,7 +79,6 @@ class TTsService : Service() {
         }
         tts.listener = object : TTsUtil.TTsListener {
             override fun onFinish(tag: String?) {
-                println("onFinish")
                 setItem(tag, false, true).apply {
                     list.getOrNull(this)?.let { dao.update(it, setOf("isFinished")) }
                     callback?.onItemChanged(this)
@@ -88,17 +87,14 @@ class TTsService : Service() {
             }
 
             override fun onPause(tag: String?) {
-                println("onPause")
                 setItem(tag, false).apply { callback?.onItemChanged(this) }
             }
 
             override fun onStart(tag: String?) {
-                println("onStart")
                 setItem(tag, true).apply { callback?.onItemChanged(this) }
             }
 
             override fun onCancel(tag: String?) {
-                println("onCancel")
                 setItem(tag, false).apply { callback?.onItemChanged(this) }
             }
 
