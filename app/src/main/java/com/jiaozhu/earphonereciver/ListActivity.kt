@@ -132,7 +132,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
                 adapter.notifyItemMoved(viewHolder.adapterPosition, target.adapterPosition)
                 Collections.swap(list, viewHolder.adapterPosition, target.adapterPosition)
             }
-
         }).apply { attachToRecyclerView(mRecyclerView) }
     }
 
@@ -240,5 +239,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     fun getMatchFromString(str: String) {
         val rules = str.split("\n")
     }
+
+
 
 }

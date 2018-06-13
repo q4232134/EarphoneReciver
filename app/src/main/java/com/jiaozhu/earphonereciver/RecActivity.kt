@@ -2,8 +2,6 @@ package com.jiaozhu.earphonereciver
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Bundle
-import android.os.PersistableBundle
 import com.jiaozhu.earphonereciver.Model.Bean
 import com.jiaozhu.earphonereciver.Model.Dao
 import com.jiaozhu.earphonereciver.comm.filtered
@@ -16,10 +14,6 @@ import toast
 public class RecActivity : Activity() {
     companion object {
         private val dao = getDao(Dao::class.java)
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
     }
 
     override fun onNewIntent(intent: Intent) {

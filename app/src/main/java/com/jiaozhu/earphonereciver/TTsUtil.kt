@@ -1,11 +1,13 @@
 package com.jiaozhu.earphonereciver
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.os.Handler
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import android.widget.Toast
@@ -60,6 +62,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
             }
 
             override fun onStart(p0: String) {
+                listener?.onPlaying(tag, list.getOrNull(p0.toInt()))
                 if (startNotify) return
                 startNotify = true
                 handle.post {
@@ -146,6 +149,11 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         fun onStart(tag: String?) {}
 
         /**
+         * 正在播放内容
+         */
+        fun onPlaying(tag: String?, content: String?) {}
+
+        /**
          * 暂停
          */
         fun onPause(tag: String?) {}
@@ -165,10 +173,13 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         }
     }
 
+
     private fun initMedia() {
-        session = MediaSessionCompat(context, context.packageName, null, null)
+        val mComponent = ComponentName(context.packageName, MediaButtonReceiver::class.java.name)
+        session = MediaSessionCompat(context, context.packageName, mComponent, null)
         session?.setCallback(object : MediaSessionCompat.Callback() {
             override fun onMediaButtonEvent(event: Intent): Boolean {
+                println(event)
                 val keyEvent: KeyEvent? = event.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
                 if (keyEvent?.action != KeyEvent.ACTION_DOWN) {
                     return false
