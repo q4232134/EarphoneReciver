@@ -144,9 +144,9 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         val view = LayoutInflater.from(this).inflate(R.layout.view_content, null)
         val edit = view.findViewById<EditText>(R.id.mEdit).apply { hint = "在这里填写过滤规则" }
         build.setView(view)
-        build.setPositiveButton("保存", { _, _ ->
+        build.setPositiveButton("保存") { _, _ ->
             Preferences.rule = edit.text.toString()
-        }).create().show()
+        }.create().show()
         edit.setText(Preferences.rule)
     }
 

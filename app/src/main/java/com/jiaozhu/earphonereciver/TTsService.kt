@@ -24,7 +24,7 @@ class TTsService : Service() {
     private val binder = TTSBinder()
     private lateinit var tts: TTsUtil
     var callback: TTSImpActivity? = null
-    lateinit var mNotificationManager: NotificationManager
+    var mNotificationManager: NotificationManager? = null
     lateinit var builder: NotificationCompat.Builder
     private lateinit var receiver: BroadcastReceiver
 
@@ -41,9 +41,10 @@ class TTsService : Service() {
 
 
     override fun onDestroy() {
-        mNotificationManager.cancel(1)
         binder.stop()
         binder.release()
+        mNotificationManager?.cancel(1)
+        mNotificationManager = null
         unregisterReceiver(receiver)
         super.onDestroy()
     }
@@ -103,13 +104,13 @@ class TTsService : Service() {
 
             override fun onPause(tag: String?) {
                 setItem(tag, false).apply { callback?.onItemChanged(this) }
-                mNotificationManager.notify(1, builder.build())
+                mNotificationManager?.notify(1, builder.build())
             }
 
             override fun onStart(tag: String?) {
                 setItem(tag, true).apply { callback?.onItemChanged(this) }
                 list.find { it.code == tag }.let { builder.setSubText(it?.title) }
-                mNotificationManager.notify(1, builder.build())
+                mNotificationManager?.notify(1, builder.build())
             }
 
             override fun onCancel(tag: String?) {
@@ -123,7 +124,7 @@ class TTsService : Service() {
 
             override fun onPlaying(tag: String?, content: String?) {
                 builder.setContentText(content)
-                mNotificationManager.notify(1, builder.build())
+                mNotificationManager?.notify(1, builder.build())
             }
         }
     }
@@ -178,7 +179,7 @@ class TTsService : Service() {
                 .addAction(android.R.drawable.ic_media_pause, "暂停", getButtonAction(ACTION_PAUSE))
                 .addAction(android.R.drawable.ic_media_next, "下一篇", getButtonAction(ACTION_NEXT))
                 .setStyle(android.support.v4.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
-                .setOngoing(true)
+                .setContentIntent(Intent(this, ListActivity::class.java).let { PendingIntent.getActivity(this, 0, it, 0) })
     }
 
     private fun registerReceiver() {
