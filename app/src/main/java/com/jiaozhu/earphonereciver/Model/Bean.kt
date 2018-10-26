@@ -1,44 +1,55 @@
 package com.jiaozhu.earphonereciver.Model
 
-import android.content.Context
-import android.database.sqlite.SQLiteOpenHelper
-import com.jiaozhu.ahibernate.annotation.Column
-import com.jiaozhu.ahibernate.annotation.Id
-import com.jiaozhu.ahibernate.annotation.Table
-import com.jiaozhu.ahibernate.dao.impl.BaseDaoImpl
-import com.jiaozhu.ahibernate.util.MyDBHelper
+import androidx.lifecycle.ViewModel
+import androidx.room.*
 import kotlin.math.min
 
 
 /**
  * Created by 教主 on 2017/12/18.
  */
-class DBHelper(context: Context) : MyDBHelper(context, "Bean", null, 1) {
-    fun onUpgrade() {
-    }
+@Database(entities = [Bean::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun dao(): BeanDao
 }
 
-class Dao(dbHelper: SQLiteOpenHelper) : BaseDaoImpl<Bean>(dbHelper) {
+interface BaseDao<T> {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun replace(t: T): Long
+
+
+    @Delete
+    fun delete(vararg beans: T)
+
+
+    @Delete
+    fun delete(beans: List<T>)
+
+}
+
+@Dao
+interface BeanDao : BaseDao<Bean> {
     /**
      * 获取未完成列表
      */
-    fun getActiveBean(): MutableList<Bean> = rawQuery("select * from $tableName order by ord", null)
+    @Query("select * from Bean order by ord")
+    fun getActiveBean(): MutableList<Bean>
 
     /**
      * 更新列表
      */
-    fun updateOrder(lists: List<Bean>) {
-        update(lists, setOf("ord", "isFinished"))
-    }
+    @Update
+    fun updateOrder(beans: List<Bean>)
+
 }
 
-@Table
-data class Bean(@Id @Column var code: String = "",
-                @Column var title: String = "",
-                @Column var content: String = "",
-                @Column var ord: Int = 0,
-                @Column var isFinished: Boolean = false,
-                var isPlaying: Boolean = false) {
+@Entity(tableName = "Bean")
+data class Bean(@PrimaryKey @ColumnInfo(name = "code") var id: String = "",
+                var title: String = "",
+                var content: String = "",
+                var ord: Int = 0,
+                var isFinished: Boolean = false,
+                @Ignore var isPlaying: Boolean = false) : ViewModel() {
 
     constructor(msg: String) : this(
             System.currentTimeMillis().toString(),
@@ -51,6 +62,7 @@ data class Bean(@Id @Column var code: String = "",
         val obj = other as? Bean ?: return false
         return content.length == obj.content.length && title == obj.title
     }
+
 
     companion object {
         fun getHead(msg: String) = msg.subSequence(0..min(msg.length - 1, 100)).toString().replace("\n", " ")

@@ -22,8 +22,9 @@
         </activity>
         <activity
             android:name=".RecActivity"
-            android:launchMode="standard"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:label="阅读"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:launchMode="standard">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -32,6 +33,11 @@
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 

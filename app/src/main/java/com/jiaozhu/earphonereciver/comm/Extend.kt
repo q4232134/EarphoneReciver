@@ -1,19 +1,19 @@
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.widget.Toast
-import com.jiaozhu.ahibernate.dao.impl.BaseDaoImpl
-import com.jiaozhu.ahibernate.util.DaoManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.jiaozhu.earphonereciver.Model.AppDatabase
+import com.jiaozhu.earphonereciver.Model.Support
 import java.util.*
 
 /**
  * 消息弹出扩展函数
  */
-fun Context.toast(msg: String?, duration: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, msg, duration).show()
+fun Context.toast(msg: Any?, duration: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(this, msg.toString(), duration).show()
 }
 
 /**
@@ -22,7 +22,8 @@ fun Context.toast(msg: String?, duration: Int = Toast.LENGTH_SHORT) {
 val Any.logTag: String?
     get() = this::class.simpleName
 
-fun <T : BaseDaoImpl<*>> getDao(clazz: Class<T>): T = DaoManager.getInstance().getDao(clazz)
+val Context.daoBuilder: AppDatabase
+    get() = Support.db
 
 val recordTimeMap = Hashtable<String, Long>()
 /**

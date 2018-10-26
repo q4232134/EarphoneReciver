@@ -7,10 +7,10 @@ import android.media.AudioManager
 import android.os.Handler
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import android.widget.Toast
+import androidx.media.session.MediaButtonReceiver
 import java.util.*
 import kotlin.properties.Delegates.observable
 

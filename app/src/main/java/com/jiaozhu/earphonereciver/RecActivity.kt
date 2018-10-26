@@ -2,10 +2,10 @@ package com.jiaozhu.earphonereciver
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Bundle
 import com.jiaozhu.earphonereciver.Model.Bean
-import com.jiaozhu.earphonereciver.Model.Dao
+import com.jiaozhu.earphonereciver.Model.Support.db
 import com.jiaozhu.earphonereciver.comm.filtered
-import getDao
 import toast
 
 /**
@@ -13,25 +13,22 @@ import toast
  */
 public class RecActivity : Activity() {
     companion object {
-        private val dao = getDao(Dao::class.java)
+        private val dao = db.dao()
     }
 
-    override fun onNewIntent(intent: Intent) {
-        dealIntent(intent)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                ?: intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)
+        dealString(text.toString().replace("\\n", "\n"))
         finish()
     }
 
-    override fun onResume() {
-        super.onResume()
-        dealIntent(intent)
-        finish()
-    }
 
     /**
      * 处理请求
      */
-    private fun dealIntent(intent: Intent) {
-        val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.replace("\\n", "\n")
+    private fun dealString(text: String?) {
         if (text.isNullOrEmpty()) return
         val model = Bean(text.filtered + "\n下一条")
         if (TTsService.list.contains(model)) {

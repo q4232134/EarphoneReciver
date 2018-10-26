@@ -4,24 +4,23 @@ import android.animation.ObjectAnimator
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.jiaozhu.earphonereciver.Model.Bean
-import com.jiaozhu.earphonereciver.Model.Dao
 import com.jiaozhu.earphonereciver.TTsService.Companion.list
 import com.jiaozhu.earphonereciver.comm.PrefSupport
 import com.jiaozhu.earphonereciver.comm.Preferences
 import com.jiaozhu.earphonereciver.comm.filtered
-import getDao
+import daoBuilder
 import kotlinx.android.synthetic.main.activity_list.*
 import java.util.*
 
@@ -31,7 +30,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     private var mItem: MenuItem? = null
     private var ttsService: TTsService? = null
     private var binder: TTsService.TTSBinder? = null
-    private val dao = getDao(Dao::class.java)
+    private val dao = daoBuilder.dao()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -118,8 +117,8 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
                 val position = viewHolder.adapterPosition
                 val model = list[position]
                 if (ItemTouchHelper.END == direction) {
-                    dao.delete(model.code)
-                    if (binder?.tag == model.code) binder?.stop()
+                    dao.delete(model)
+                    if (binder?.tag == model.id) binder?.stop()
                     list.removeAt(position)
                     adapter.notifyItemRemoved(position)
                 } else {
@@ -220,7 +219,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
             }
             R.id.action_clear -> {
                 val temps = list.filter { it.isFinished }
-                dao.delete(temps.map { it.code })
+                dao.delete(temps)
                 list.removeAll(temps)
                 adapter.notifyDataSetChanged()
             }
@@ -232,14 +231,13 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     }
 
     companion object {
-        val STR_PLAY = "播放"
-        val STR_STOP = "暂停"
+        const val STR_PLAY = "播放"
+        const val STR_STOP = "暂停"
     }
 
     fun getMatchFromString(str: String) {
         val rules = str.split("\n")
     }
-
 
 
 }

@@ -16,7 +16,9 @@ class PrefSupport {
         lateinit var context: Context
         val default_rule = """推荐阅读[\s\S]*<=>null
 //\n{1,}<==>\\n
-^[\s\S]*?关注\n<=>null""".trimIndent()
+^[\s\S]*?关注\n<=>null
+关闭无图模式[\s\S]*? 无图模式<==>null
+著作权归作者所有[\s\S]*<==>null""".trimIndent()
     }
 }
 
@@ -31,6 +33,8 @@ class Preferences<T>(val name: String, private val default: T)
         val SHAREDPREFERENCES_NAME = "Setting"
         val prefs: SharedPreferences = context.getSharedPreferences(SHAREDPREFERENCES_NAME, Context.MODE_PRIVATE)
         var rule by Preferences("rule", default_rule)//过滤规则
+        var saveId: String? by Preferences("saveId", null)
+        var savePoint: Int? by Preferences("savePoint", null)
     }
 
 

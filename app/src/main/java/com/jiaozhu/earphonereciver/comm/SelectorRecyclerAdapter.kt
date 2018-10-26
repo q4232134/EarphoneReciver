@@ -1,13 +1,13 @@
 package com.jiaozhu.earphonereciver.comm
 
 import android.annotation.SuppressLint
-import android.support.v7.app.ActionBar
-import android.support.v7.view.ActionMode
-import android.support.v7.widget.RecyclerView
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.view.ActionMode
+import androidx.recyclerview.widget.RecyclerView
 import java.util.*
 
 /**

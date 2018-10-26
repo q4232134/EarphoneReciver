@@ -11,10 +11,9 @@ import android.content.IntentFilter
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.app.NotificationCompat
+import androidx.core.app.NotificationCompat
 import com.jiaozhu.earphonereciver.Model.Bean
-import com.jiaozhu.earphonereciver.Model.Dao
-import getDao
+import com.jiaozhu.earphonereciver.Model.Support.db
 
 
 /**
@@ -63,7 +62,7 @@ class TTsService : Service() {
         fun start(isNext: Boolean = tts.isFinished) {
             if (isNext) {
                 val item = list.firstOrNull { !it.isFinished } ?: return
-                tts.proper(item.code, item.content)
+                tts.proper(item.id, item.content)
             }
             tts.isPlaying = true
         }
@@ -86,7 +85,7 @@ class TTsService : Service() {
     private fun initTTs() {
         tts = TTsUtil(this)
         fun setItem(tag: String?, isPlaying: Boolean, isFinished: Boolean? = null): Int {
-            val index = list.indexOfFirst { it.code == tag }
+            val index = list.indexOfFirst { it.id == tag }
             list.getOrNull(index)?.apply {
                 this.isPlaying = isPlaying
                 isFinished?.let { this.isFinished = it }
@@ -96,7 +95,7 @@ class TTsService : Service() {
         tts.listener = object : TTsUtil.TTsListener {
             override fun onFinish(tag: String?) {
                 setItem(tag, false, true).apply {
-                    list.getOrNull(this)?.let { dao.update(it, setOf("isFinished")) }
+                    list.getOrNull(this)?.let { dao.replace(it) }
                     callback?.onItemChanged(this)
                 }
                 binder.start()
@@ -109,7 +108,7 @@ class TTsService : Service() {
 
             override fun onStart(tag: String?) {
                 setItem(tag, true).apply { callback?.onItemChanged(this) }
-                list.find { it.code == tag }.let { builder.setSubText(it?.title) }
+                list.find { it.id == tag }.let { builder.setSubText(it?.title) }
                 mNotificationManager?.notify(1, builder.build())
             }
 
@@ -131,7 +130,7 @@ class TTsService : Service() {
 
 
     fun List<Bean>.get(tag: String?): Bean? {
-        return this.firstOrNull { it.code == tag }
+        return this.firstOrNull { it.id == tag }
     }
 
     fun getMatchFromString(str: String) {
@@ -139,7 +138,7 @@ class TTsService : Service() {
     }
 
     companion object {
-        private val dao = getDao(Dao::class.java)
+        private val dao = db.dao()
         var list: MutableList<Bean> = dao.getActiveBean()
         private val CHANNEL_ID = "channel1"
         val ACTION_PAUSE = "pause"
@@ -178,7 +177,7 @@ class TTsService : Service() {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .addAction(android.R.drawable.ic_media_pause, "暂停", getButtonAction(ACTION_PAUSE))
                 .addAction(android.R.drawable.ic_media_next, "下一篇", getButtonAction(ACTION_NEXT))
-                .setStyle(android.support.v4.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
+//                .setStyle(NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
                 .setContentIntent(Intent(this, ListActivity::class.java).let { PendingIntent.getActivity(this, 0, it, 0) })
     }
 
