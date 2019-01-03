@@ -5,9 +5,16 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.room.TypeConverter
 import com.jiaozhu.earphonereciver.Model.AppDatabase
+import com.jiaozhu.earphonereciver.Model.Bean
+import com.jiaozhu.earphonereciver.Model.BeanDao
 import com.jiaozhu.earphonereciver.Model.Support
+import com.jiaozhu.earphonereciver.TTsService
+import com.jiaozhu.earphonereciver.comm.filtered
 import java.util.*
+
+
 
 /**
  * 消息弹出扩展函数
@@ -64,6 +71,25 @@ fun Activity.checkPermission(requestCode: Int, vararg permissions: String, runna
     } else {
         ActivityCompat.requestPermissions(this, needRequestList.toTypedArray(), requestCode)
     }
-
 }
+
+
+/**
+ * 处理请求
+ */
+fun Context.dealString(text: String?, dao: BeanDao) {
+    if (text.isNullOrEmpty()) return
+    val model = Bean(text.filtered + "\n下一条")
+    if (TTsService.list.contains(model)) {
+        toast("条目已存在")
+        return
+    }
+    TTsService.list.add(model)
+    if (dao.replace(model) > 0) {
+        toast("添加阅读条目成功")
+    } else {
+        toast("添加失败")
+    }
+}
+
 

@@ -2,6 +2,7 @@ package com.jiaozhu.earphonereciver.Model
 
 import androidx.lifecycle.ViewModel
 import androidx.room.*
+import java.util.*
 import kotlin.math.min
 
 
@@ -9,6 +10,7 @@ import kotlin.math.min
  * Created by 教主 on 2017/12/18.
  */
 @Database(entities = [Bean::class], version = 1)
+@TypeConverters(value = [Converters::class])
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dao(): BeanDao
 }
@@ -49,6 +51,8 @@ data class Bean(@PrimaryKey @ColumnInfo(name = "code") var id: String = "",
                 var content: String = "",
                 var ord: Int = 0,
                 var isFinished: Boolean = false,
+                var createTime: Date = Date(),
+                var history: Int = 0,
                 @Ignore var isPlaying: Boolean = false) : ViewModel() {
 
     constructor(msg: String) : this(
@@ -68,3 +72,17 @@ data class Bean(@PrimaryKey @ColumnInfo(name = "code") var id: String = "",
         fun getHead(msg: String) = msg.subSequence(0..min(msg.length - 1, 100)).toString().replace("\n", " ")
     }
 }
+
+
+class Converters {
+    @TypeConverter
+    fun fromTimestamp(value: Long?): Date? {
+        return if (value == null) null else Date(value)
+    }
+
+    @TypeConverter
+    fun dateToTimestamp(date: Date?): Long? {
+        return date?.time
+    }
+}
+

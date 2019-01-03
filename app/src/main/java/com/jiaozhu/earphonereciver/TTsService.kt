@@ -61,8 +61,11 @@ class TTsService : Service() {
 
         fun start(isNext: Boolean = tts.isFinished) {
             if (isNext) {
-                val item = list.firstOrNull { !it.isFinished } ?: return
-                tts.proper(item.id, item.content)
+                tts.stop()
+                //寻找最新可读项
+                val index = list.indexOfFirst { tts.tag == it.id } + 1
+                val item = list.getOrNull(index) ?: return
+                tts.proper(item.id, item.content, item.history)
             }
             tts.isPlaying = true
         }
@@ -121,8 +124,9 @@ class TTsService : Service() {
                 binder.start(true)
             }
 
-            override fun onPlaying(tag: String?, content: String?) {
+            override fun onPlaying(tag: String?, content: String?, currentItemIndex: Int, index: Int) {
                 builder.setContentText(content)
+                list[currentItemIndex].history = index
                 mNotificationManager?.notify(1, builder.build())
             }
         }

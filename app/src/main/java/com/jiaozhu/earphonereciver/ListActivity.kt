@@ -18,15 +18,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.jiaozhu.earphonereciver.Model.Bean
 import com.jiaozhu.earphonereciver.TTsService.Companion.list
 import com.jiaozhu.earphonereciver.comm.PrefSupport
+import com.jiaozhu.earphonereciver.comm.PrefSupport.Companion.context
 import com.jiaozhu.earphonereciver.comm.Preferences
 import com.jiaozhu.earphonereciver.comm.filtered
 import daoBuilder
+import dealString
 import kotlinx.android.synthetic.main.activity_list.*
 import java.util.*
 
 
 class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Companion.TTSImpActivity {
     private lateinit var adapter: ListAdapter
+    private lateinit var clipboard: ClipboardManager
     private var mItem: MenuItem? = null
     private var ttsService: TTsService? = null
     private var binder: TTsService.TTSBinder? = null
@@ -39,10 +42,31 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         mRecyclerView.layoutManager = LinearLayoutManager(this)
         adapter = ListAdapter(list).apply { onItemClickListener = this@ListActivity }
         mRecyclerView.adapter = adapter
+        initClipboard()
         initDrag()
         initService()
         mAdd.setOnClickListener {
             onAddClicked()
+        }
+    }
+
+    /**
+     * 初始化剪切板监听
+     */
+    var text = ""
+
+    private fun min(a: Int, b: Int): Int {
+        if (a > b) return b
+        return a
+    }
+
+    private fun initClipboard() {
+        clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.addPrimaryClipChangedListener {
+            val temp = (clipboard.primaryClip.getItemAt(0).text ?: "").toString()
+            if (temp.substring(min(temp.length, 50)) == text) return@addPrimaryClipChangedListener
+            text = temp.substring(min(temp.length, 50))
+            dealString(temp.replace("\\n", "\n"), dao)
         }
     }
 
@@ -78,8 +102,8 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         ttsService?.callback = this
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onPause() {
+        super.onPause()
         ttsService?.callback = null
         list.forEachIndexed { index, it -> it.ord = index }
         dao.updateOrder(list)
@@ -238,6 +262,5 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     fun getMatchFromString(str: String) {
         val rules = str.split("\n")
     }
-
 
 }
