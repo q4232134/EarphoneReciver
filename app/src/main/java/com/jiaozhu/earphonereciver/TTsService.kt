@@ -23,6 +23,7 @@ class TTsService : Service() {
     private val binder = TTSBinder()
     private lateinit var tts: TTsUtil
     var callback: TTSImpActivity? = null
+    var current: Bean? = null
     var mNotificationManager: NotificationManager? = null
     lateinit var builder: NotificationCompat.Builder
     private lateinit var receiver: BroadcastReceiver
@@ -89,7 +90,7 @@ class TTsService : Service() {
         tts = TTsUtil(this)
         fun setItem(tag: String?, isPlaying: Boolean, isFinished: Boolean? = null): Int {
             val index = list.indexOfFirst { it.id == tag }
-            list.getOrNull(index)?.apply {
+            current = list.getOrNull(index)?.apply {
                 this.isPlaying = isPlaying
                 isFinished?.let { this.isFinished = it }
             }
@@ -124,9 +125,9 @@ class TTsService : Service() {
                 binder.start(true)
             }
 
-            override fun onPlaying(tag: String?, content: String?, currentItemIndex: Int, index: Int) {
+            override fun onPlaying(tag: String?, content: String?, index: Int) {
                 builder.setContentText(content)
-                list[currentItemIndex].history = index
+                current?.history = index
                 mNotificationManager?.notify(1, builder.build())
             }
         }

@@ -62,7 +62,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
             }
 
             override fun onStart(p0: String) {
-                listener?.onPlaying(tag, list.getOrNull(p0.toInt()), current, p0.toInt())
+                listener?.onPlaying(tag, list.getOrNull(p0.toInt()), p0.toInt())
                 if (startNotify) return
                 startNotify = true
                 handle.post {
@@ -151,7 +151,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         /**
          * 正在播放内容
          */
-        fun onPlaying(tag: String?, content: String?, currentItemIndex: Int, index: Int) {}
+        fun onPlaying(tag: String?, content: String?, index: Int) {}
 
         /**
          * 暂停
