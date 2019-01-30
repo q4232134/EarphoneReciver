@@ -64,7 +64,8 @@ class TTsService : Service() {
             if (isNext) {
                 tts.stop()
                 //寻找最新可读项
-                val index = list.indexOfFirst { tts.tag == it.id } + 1
+                val index = list.indexOfFirst { tts.tag == it.id && !it.isFinished } + 1
+                if (index == 0) return
                 val item = list.getOrNull(index) ?: return
                 tts.proper(item.id, item.content, item.history)
             }
@@ -108,6 +109,7 @@ class TTsService : Service() {
             override fun onPause(tag: String?) {
                 setItem(tag, false).apply { callback?.onItemChanged(this) }
                 mNotificationManager?.notify(1, builder.build())
+                println("--onPause")
             }
 
             override fun onStart(tag: String?) {
@@ -118,6 +120,7 @@ class TTsService : Service() {
 
             override fun onCancel(tag: String?) {
                 setItem(tag, false).apply { callback?.onItemChanged(this) }
+                println("--onCancel")
             }
 
             override fun onNext(tag: String?) {

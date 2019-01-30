@@ -104,9 +104,15 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
 
     override fun onPause() {
         super.onPause()
+        println("onPause")
         ttsService?.callback = null
         list.forEachIndexed { index, it -> it.ord = index }
         dao.updateOrder(list)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        println("onStop")
     }
 
     private fun onAddClicked() {
