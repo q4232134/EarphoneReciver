@@ -34,14 +34,14 @@ interface BeanDao : BaseDao<Bean> {
     /**
      * 获取未完成列表
      */
-    @Query("select * from Bean where isFinished = 'false' order by ord")
+    @Query("select * from Bean where isFinished = 0 order by ord")
     fun getActiveBean(): MutableList<Bean>
 
 
     /**
      * 获取历史记录
      */
-    @Query("select * from Bean where isFinished = 'true' order by createTime")
+    @Query("select * from Bean where isFinished = 1 order by createTime")
     fun getHistory(): MutableList<Bean>
 
     /**

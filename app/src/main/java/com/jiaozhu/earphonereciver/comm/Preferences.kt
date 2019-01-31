@@ -16,7 +16,7 @@ class PrefSupport {
         lateinit var context: Context
         val default_rule = """推荐阅读[\s\S]*<=>null
 //\n{1,}<==>\\n
-^[\s\S]*?关注\n<=>null
+//^[\s\S]*?关注\n<=>null
 关闭无图模式[\s\S]*? 无图模式<==>null
 著作权归作者所有[\s\S]*<==>null""".trimIndent()
     }
