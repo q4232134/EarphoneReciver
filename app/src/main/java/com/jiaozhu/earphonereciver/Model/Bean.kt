@@ -41,7 +41,7 @@ interface BeanDao : BaseDao<Bean> {
     /**
      * 获取历史记录
      */
-    @Query("select * from Bean where isFinished = 1 order by createTime")
+    @Query("select * from Bean where isFinished = 1 order by createTime desc")
     fun getHistory(): MutableList<Bean>
 
     /**
@@ -49,6 +49,12 @@ interface BeanDao : BaseDao<Bean> {
      */
     @Update
     fun updateOrder(beans: List<Bean>)
+
+    /**
+     * 更新数据历史记录
+     */
+    @Query("update Bean set history = :history where code = :code")
+    fun updateHistory(code: String, history: Int)
 
 }
 

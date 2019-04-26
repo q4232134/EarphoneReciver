@@ -1,6 +1,7 @@
 package com.jiaozhu.earphonereciver
 
 import android.animation.ObjectAnimator
+import android.animation.TimeInterpolator
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
@@ -17,7 +18,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.jiaozhu.earphonereciver.Model.Bean
 import com.jiaozhu.earphonereciver.TTsService.Companion.list
-import com.jiaozhu.earphonereciver.comm.PrefSupport
 import com.jiaozhu.earphonereciver.comm.PrefSupport.Companion.context
 import com.jiaozhu.earphonereciver.comm.Preferences
 import com.jiaozhu.earphonereciver.comm.filtered
@@ -35,11 +35,21 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     private var binder: TTsService.TTSBinder? = null
     private val dao = daoBuilder.dao()
 
+    inner class CLayoutManager(context: Context) : LinearLayoutManager(context) {
+        override fun onLayoutChildren(recycler: RecyclerView.Recycler?, state: RecyclerView.State) {
+            try {
+                super.onLayoutChildren(recycler, state)
+            } catch (e: IndexOutOfBoundsException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
-        PrefSupport.context = this
-        mRecyclerView.layoutManager = LinearLayoutManager(this)
+        context = this
+        mRecyclerView.layoutManager = CLayoutManager(this)
         adapter = ListAdapter(list).apply { onItemClickListener = this@ListActivity }
         mRecyclerView.adapter = adapter
         initClipboard()
@@ -49,6 +59,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
             onAddClicked()
         }
     }
+
 
     /**
      * 初始化剪切板监听
@@ -80,7 +91,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
 
         override fun onServiceDisconnected(name: ComponentName) {
         }
-
     }
 
     private fun initService() {
@@ -91,6 +101,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
      * 刷新UI界面
      */
     private fun freshUI() {
+
         adapter.notifyDataSetChanged()
         if (mItem == null) return
         checkStatus()
@@ -105,12 +116,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     override fun onPause() {
         super.onPause()
         ttsService?.callback = null
-        list.forEachIndexed { index, it -> it.ord = index }
-        dao.updateOrder(list)
-    }
-
-    override fun onStop() {
-        super.onStop()
     }
 
     private fun onAddClicked() {
@@ -144,20 +149,22 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val model = list[position]
+                if (binder?.tag == model.id) binder?.stop()
                 if (ItemTouchHelper.END == direction) {
                     dao.delete(model)
-                    if (binder?.tag == model.id) binder?.stop()
-                    list.removeAt(position)
-                    adapter.notifyItemRemoved(position)
                 } else {
-                    model.isFinished = false
-                    adapter.notifyItemChanged(position)
+                    model.isFinished = true
+                    dao.replace(model)
                 }
+                adapter.notifyItemRemoved(position)
+                list.removeAt(position)
             }
 
             override fun onMoved(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, fromPos: Int, target: RecyclerView.ViewHolder, toPos: Int, x: Int, y: Int) {
                 adapter.notifyItemMoved(viewHolder.adapterPosition, target.adapterPosition)
                 Collections.swap(list, viewHolder.adapterPosition, target.adapterPosition)
+                list.forEachIndexed { index, it -> it.ord = index }
+                dao.updateOrder(list)
             }
         }).apply { attachToRecyclerView(mRecyclerView) }
     }
@@ -217,6 +224,12 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         adapter.notifyItemChanged(position)
     }
 
+    override fun onItemRemoved(position: Int) {
+        checkStatus()
+        if (position == -1) return
+        adapter.notifyItemRemoved(position)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         unbindService(connection)
@@ -224,7 +237,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
 
     private fun pickUpAnimation(view: View) {
         val animator = ObjectAnimator.ofFloat(view, "translationZ", 1f, 10f)
-        animator.interpolator = DecelerateInterpolator()
+        animator.interpolator = DecelerateInterpolator() as TimeInterpolator?
         animator.duration = 300
         animator.start()
     }
@@ -237,19 +250,21 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
 
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        when (id) {
+        when (item.itemId) {
             R.id.action_read -> {
                 if (binder?.isPlaying == true) binder?.pause()
                 else
                     binder?.start()
                 return true
             }
-            R.id.action_clear -> {
-                val temps = list.filter { it.isFinished }
-                dao.delete(temps)
-                list.removeAll(temps)
-                adapter.notifyDataSetChanged()
+//            R.id.action_clear -> {
+//                val temps = list.filter { it.isFinished }
+//                list.removeAll(temps)
+//                adapter.notifyDataSetChanged()
+//            }
+            R.id.action_history -> {
+                val i = Intent(this, HistoryActivity::class.java)
+                startActivity(i)
             }
             R.id.action_filter -> {
                 showSettingDialog()

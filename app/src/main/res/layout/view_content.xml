@@ -16,6 +16,6 @@
             android:background="@android:color/transparent"
             android:gravity="top"
             android:hint="复制需要朗读的文本到这里"
-            android:padding="10dp" />
+            android:inputType="" android:padding="10dp" />
     </ScrollView>
 </LinearLayout>

@@ -22,7 +22,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
     private val list: MutableList<String> = LinkedList()
     private var current = 0
     private val cacheLength = 1//缓存文本数量
-    private var session: MediaSessionCompat? = null
+    var session: MediaSessionCompat? = null
     private var stopNotify = false//是否已发送停止通知标志，每次播放状态改变时重置，用于解决onStop调用多次的问题
     private var startNotify = false//是否已发送开始通知标志，每次播放状态改变时重置，用于解决onStart调用多次的问题
     var isPlaying by observable(false) { _, _, value ->
@@ -173,12 +173,32 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         }
     }
 
+    inner class MediaSessionCallback : MediaSessionCompat.Callback() {
+
+        override fun onPlay() {
+            println("onPlay")
+        }
+
+        override fun onPause() {
+            println("onPause")
+        }
+
+        override fun onStop() {
+            println("onStop")
+        }
+
+        override fun onSkipToNext() {
+            println("onSkipToNext")
+        }
+
+    }
 
     private fun initMedia() {
         val mComponent = ComponentName(context.packageName, MediaButtonReceiver::class.java.name)
         session = MediaSessionCompat(context, context.packageName, mComponent, null)
         session?.setCallback(object : MediaSessionCompat.Callback() {
             override fun onMediaButtonEvent(event: Intent): Boolean {
+                println("1")
                 val keyEvent: KeyEvent? = event.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
                 if (keyEvent?.action != KeyEvent.ACTION_DOWN) {
                     return false
@@ -195,10 +215,13 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
                     }
 
                 }
-                return true;
+                return true
             }
         })
-        session?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS)
+        session?.setFlags(
+                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
+                        MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS or
+                        MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
         getFocus()
     }
 
@@ -243,6 +266,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         when (p0) {
             // 重新获得焦点,  可做恢复播放，恢复后台音量的操作
             AudioManager.AUDIOFOCUS_GAIN -> {
+                isPlaying = true
             }
             // 永久丢失焦点除非重新主动获取，这种情况是被其他播放器抢去了焦点，  为避免与其他播放器混音，可将音乐暂停
             AudioManager.AUDIOFOCUS_LOSS
