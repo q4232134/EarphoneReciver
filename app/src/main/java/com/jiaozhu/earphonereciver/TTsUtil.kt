@@ -222,7 +222,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
                         MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS or
                         MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-        getFocus()
+//        getFocus()
     }
 
     /**
@@ -272,15 +272,17 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
             AudioManager.AUDIOFOCUS_LOSS
             -> {
                 isPlaying = false
+                release()
             }
             // 暂时丢失焦点，这种情况是被其他应用申请了短暂的焦点，可压低后台音量
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
             -> {
-                isPlaying = false
+//                isPlaying = false
             }
             // 短暂丢失焦点，这种情况是被其他应用申请了短暂的焦点希望其他声音能压低音量（或者关闭声音）凸显这个声音（比如短信提示音），
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
             -> {
+//                isPlaying = false
             }
         }
     }

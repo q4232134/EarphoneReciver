@@ -4,8 +4,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -27,7 +29,7 @@ class TTsService : Service() {
     var current: Bean? = null
     var mNotificationManager: NotificationManager? = null
     lateinit var builder: NotificationCompat.Builder
-//    private lateinit var receiver: BroadcastReceiver
+    private lateinit var receiver: BroadcastReceiver
 
     override fun onBind(intent: Intent): IBinder {
         return binder
@@ -45,7 +47,7 @@ class TTsService : Service() {
         binder.release()
         mNotificationManager?.cancel(1)
         mNotificationManager = null
-//        unregisterReceiver(receiver)
+        unregisterReceiver(receiver)
         super.onDestroy()
     }
 
@@ -199,31 +201,31 @@ class TTsService : Service() {
     }
 
     private fun registerReceiver() {
-//        receiver = MediaReceiver()
-//        val filter = IntentFilter().apply {
-//            addAction(ACTION_PAUSE)
-//            addAction(ACTION_NEXT)
-//            addAction(ACTION_PLAY)
-//            addAction(ACTION_CLOSE)
-//        }
-//        registerReceiver(receiver, filter)
+        receiver = MediaReceiver()
+        val filter = IntentFilter().apply {
+            addAction(ACTION_PAUSE)
+            addAction(ACTION_NEXT)
+            addAction(ACTION_PLAY)
+            addAction(ACTION_CLOSE)
+        }
+        registerReceiver(receiver, filter)
     }
 
 
-//    inner class MediaReceiver : BroadcastReceiver() {
-//        override fun onReceive(context: Context, intent: Intent) {
-//            println(intent.action)
-//            when (intent.action) {
-//                ACTION_PAUSE -> {
-//                    if (binder.isPlaying)
-//                        binder.pause()
-//                    else
-//                        binder.start(false)
-//                }
-//                ACTION_NEXT -> binder.start(true)
-//                ACTION_PLAY -> binder.start(false)
-//                else -> ""
-//            }
-//        }
-//    }
+    inner class MediaReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            println(intent.action)
+            when (intent.action) {
+                ACTION_PAUSE -> {
+                    if (binder.isPlaying)
+                        binder.pause()
+                    else
+                        binder.start(false)
+                }
+                ACTION_NEXT -> binder.start(true)
+                ACTION_PLAY -> binder.start(false)
+                else -> ""
+            }
+        }
+    }
 }
