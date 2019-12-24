@@ -24,6 +24,7 @@ import com.jiaozhu.earphonereciver.comm.filtered
 import daoBuilder
 import dealString
 import kotlinx.android.synthetic.main.activity_list.*
+import toast
 import java.util.*
 
 
@@ -58,6 +59,22 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         mAdd.setOnClickListener {
             onAddClicked()
         }
+        mAdd.setOnLongClickListener {
+            onAddLongClicked()
+        }
+    }
+
+    private fun onAddLongClicked(): Boolean {
+        val temp = (clipboard.primaryClip.getItemAt(0).text ?: "").toString()
+        if (temp.length < 50) {
+            toast("文字少于50字符！")
+            return true
+        }
+        text = temp.substring(min(temp.length, 50))
+        var flag = dealString(temp.replace("\\n", "\n"), dao)
+        if (flag)
+            adapter.notifyItemInserted(list.size - 1)
+        return true
     }
 
 

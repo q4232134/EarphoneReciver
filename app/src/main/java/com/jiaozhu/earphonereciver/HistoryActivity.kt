@@ -40,14 +40,15 @@ class HistoryActivity : AppCompatActivity() {
                 val model = list[position]
                 if (ItemTouchHelper.END == direction) {
                     dao.delete(model)
-                    list.remove(model)
                 } else {
                     model.isFinished = false
+                    model.history = 0
                     dao.replace(model)
                     TTsService.list.add(model)
                     dao.updateOrder(TTsService.list)
                     adapter.notifyItemRemoved(position)
                 }
+                list.remove(model)
             }
         }).apply { attachToRecyclerView(mRecyclerView) }
     }

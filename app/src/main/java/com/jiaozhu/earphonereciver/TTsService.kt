@@ -88,7 +88,6 @@ class TTsService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        println("3")
         handleIntent(tts.session, intent)
         return super.onStartCommand(intent, flags, startId)
     }
