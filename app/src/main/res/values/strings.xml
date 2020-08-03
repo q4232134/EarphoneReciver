@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">语音阅读</string>
     <string name="title_activity_history">HistoryActivity</string>
+    <string name="accessibility_des">HistoryActivity</string>
 </resources>

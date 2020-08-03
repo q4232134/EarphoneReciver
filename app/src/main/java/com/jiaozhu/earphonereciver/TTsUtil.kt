@@ -1,6 +1,5 @@
 package com.jiaozhu.earphonereciver
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
@@ -10,7 +9,6 @@ import android.speech.tts.UtteranceProgressListener
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import android.widget.Toast
-import androidx.media.session.MediaButtonReceiver
 import java.util.*
 import kotlin.properties.Delegates.observable
 
@@ -194,8 +192,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
     }
 
     private fun initMedia() {
-        val mComponent = ComponentName(context.packageName, MediaButtonReceiver::class.java.name)
-        session = MediaSessionCompat(context, context.packageName, mComponent, null)
+        session = MediaSessionCompat(context, "TTS")
         session?.setCallback(object : MediaSessionCompat.Callback() {
             override fun onMediaButtonEvent(event: Intent): Boolean {
                 println("1")
@@ -277,7 +274,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
             // 暂时丢失焦点，这种情况是被其他应用申请了短暂的焦点，可压低后台音量
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
             -> {
-//                isPlaying = false
+                isPlaying = false
             }
             // 短暂丢失焦点，这种情况是被其他应用申请了短暂的焦点希望其他声音能压低音量（或者关闭声音）凸显这个声音（比如短信提示音），
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK

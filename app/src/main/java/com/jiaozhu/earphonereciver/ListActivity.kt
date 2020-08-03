@@ -3,12 +3,10 @@ package com.jiaozhu.earphonereciver
 import android.animation.ObjectAnimator
 import android.animation.TimeInterpolator
 import android.content.*
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
