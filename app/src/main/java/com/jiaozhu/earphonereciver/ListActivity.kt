@@ -3,7 +3,6 @@ package com.jiaozhu.earphonereciver
 import android.animation.ObjectAnimator
 import android.animation.TimeInterpolator
 import android.content.*
-import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.view.*
@@ -23,6 +22,7 @@ import daoBuilder
 import dealString
 import kotlinx.android.synthetic.main.activity_list.*
 import toast
+import java.lang.reflect.Method
 import java.util.*
 
 
@@ -63,7 +63,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     }
 
     private fun onAddLongClicked(): Boolean {
-        val temp = (clipboard.primaryClip.getItemAt(0).text ?: "").toString()
+        val temp = (clipboard.primaryClip?.getItemAt(0)?.text ?: "").toString()
         if (temp.length < 50) {
             toast("文字少于50字符！")
             return true
@@ -89,7 +89,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     private fun initClipboard() {
         clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.addPrimaryClipChangedListener {
-            val temp = (clipboard.primaryClip.getItemAt(0).text ?: "").toString()
+            val temp = (clipboard.primaryClip?.getItemAt(0)?.text ?: "").toString()
             if (temp.substring(min(temp.length, 50)) == text) return@addPrimaryClipChangedListener
             text = temp.substring(min(temp.length, 50))
             dealString(temp.replace("\\n", "\n"), dao)
@@ -109,7 +109,11 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     }
 
     private fun initService() {
-        bindService(Intent(this@ListActivity, TTsService::class.java), connection, Context.BIND_AUTO_CREATE)
+        bindService(
+            Intent(this@ListActivity, TTsService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
+        )
     }
 
     /**
@@ -156,8 +160,15 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
      * 初始化滑动组件
      */
     private fun initDrag() {
-        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.END or ItemTouchHelper.START) {
-            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            ItemTouchHelper.END or ItemTouchHelper.START
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
                 return true
             }
 
@@ -175,7 +186,15 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
                 list.removeAt(position)
             }
 
-            override fun onMoved(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, fromPos: Int, target: RecyclerView.ViewHolder, toPos: Int, x: Int, y: Int) {
+            override fun onMoved(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                fromPos: Int,
+                target: RecyclerView.ViewHolder,
+                toPos: Int,
+                x: Int,
+                y: Int
+            ) {
                 adapter.notifyItemMoved(viewHolder.adapterPosition, target.adapterPosition)
                 Collections.swap(list, viewHolder.adapterPosition, target.adapterPosition)
                 list.forEachIndexed { index, it -> it.ord = index }
@@ -207,6 +226,16 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         val build = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.view_content, null)
         val edit = view.findViewById<EditText>(R.id.mEdit)
+        try {
+            val debugDB = Class.forName("com.amitshekhar.DebugDB")
+            val getAddressLog: Method = debugDB.getMethod("getAddressLog")
+            val value: Any? = getAddressLog.invoke(null)
+            edit.hint = "复制需要朗读的文本到这里或者\n使用网页打开${
+                (value as String).replace("8080", "8888").replace("Open", "")
+                    .replace(" in your browser", "")
+            }"
+        } catch (ignore: Exception) {
+        }
         build.setView(view)
         //修改按钮事件
         val onPositive = DialogInterface.OnClickListener { _, _ ->

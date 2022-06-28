@@ -60,7 +60,7 @@ class Preferences<T>(val name: String, private val default: T)
 
     @SuppressWarnings("unchecked")
     private fun <T> findPreference(name: String, default: T): T = with(prefs) {
-        val res: Any = when (default) {
+        val res: Any? = when (default) {
             is Long -> getLong(name, default)
             is String -> getString(name, default)
             is Int -> getInt(name, default)

@@ -3,6 +3,7 @@ package com.jiaozhu.earphonereciver
 import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import com.jiaozhu.earphonereciver.Model.Support.db
 import com.jiaozhu.earphonereciver.comm.PrefSupport
@@ -21,7 +22,10 @@ public class RecActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        finish()
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                ?: intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)
+        dealString(text.toString().replace("\\n", "\n"), dao)
+        finish()
     }
 
     override fun onStart() {
@@ -29,7 +33,7 @@ public class RecActivity : Activity() {
     }
 
     override fun onDestroy() {
-        initClipboard()
+//        initClipboard()
         super.onDestroy()
     }
 
@@ -54,6 +58,4 @@ public class RecActivity : Activity() {
         text = temp.substring(min(temp.length, 50))
         dealString(temp.replace("\\n", "\n"), dao)
     }
-
-
 }

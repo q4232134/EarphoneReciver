@@ -15,8 +15,11 @@ import java.io.File
 class CApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        Support.db = Room.databaseBuilder(this, AppDatabase::class.java, "bean").allowMainThreadQueries().build()
-        CrashHandler.init(this, getExternalFilesDir(null).path + File.separator + "crash.log")
+        Support.db =
+            Room.databaseBuilder(this, AppDatabase::class.java, "bean").allowMainThreadQueries()
+                .build()
+        CrashHandler.init(this, getExternalFilesDir(null)?.path + File.separator + "crash.log")
         PrefSupport.context = this
+        HttpService(8888,this).start()
     }
 }

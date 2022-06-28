@@ -15,7 +15,7 @@ class MediaButtonReceiver : BroadcastReceiver() {
         if (Intent.ACTION_MEDIA_BUTTON == action) {
 
             // 获得按键码
-            val keycode = event.keyCode
+            val keycode = event?.keyCode
             println(keycode)
             when (keycode) {
                 KeyEvent.KEYCODE_MEDIA_NEXT -> {
