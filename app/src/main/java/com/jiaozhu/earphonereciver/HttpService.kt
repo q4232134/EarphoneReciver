@@ -1,12 +1,11 @@
 package com.jiaozhu.earphonereciver
 
-import android.content.Context
-import com.jiaozhu.earphonereciver.Model.Support
+import com.jiaozhu.earphonereciver.Model.SharedModel.dao
 import com.jiaozhu.earphonereciver.comm.PrefSupport.Companion.context
 import dealString
 import fi.iki.elonen.NanoHTTPD
 
-class HttpService(port: Int, context: Context) : NanoHTTPD(port) {
+class HttpService(port: Int) : NanoHTTPD(port) {
     override fun serve(session: IHTTPSession): Response? {
         var msg =
             "<meta http-equiv='Content-Type' content='text/html; charset=utf-8'><html><body><h1>插入阅读数据</h1>\n"
@@ -18,9 +17,9 @@ class HttpService(port: Int, context: Context) : NanoHTTPD(port) {
         msg += "<p><textarea  type='text' name='msg' cols='150' rows='30'></textarea></p>\n"
         msg += "<input type='submit' value='提交'/></form>\n"
         if (parms["msg"] != null) {
-            msg += "<p>${parms["msg"]?.substring(0,50)}...</p>插入成功</p>"
+            msg += "<p>${parms["msg"]?.substring(0, 50)}...</p>插入成功</p>"
             try {
-                context.dealString(parms["msg"]?.replace("\\n", "\n"), Support.db.dao())
+                context.dealString(parms["msg"], dao)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

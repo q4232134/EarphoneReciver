@@ -1,26 +1,29 @@
 package com.jiaozhu.earphonereciver
 
 import android.content.Context
-import android.content.Intent
-import android.media.AudioManager
-import android.os.Handler
+import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.support.v4.media.session.MediaSessionCompat
-import android.view.KeyEvent
+import android.support.v4.media.session.PlaybackStateCompat
 import android.widget.Toast
 import java.util.*
 import kotlin.properties.Delegates.observable
 
 
-class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.OnAudioFocusChangeListener {
+class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
     var tag: String? = null
-    var listener: TTsListener? = null
+    var listener: TTsStatusListener? = null
     private var tts: TextToSpeech = TextToSpeech(context, this)
     private val list: MutableList<String> = LinkedList()
     private var current = 0
+    var mState: Int by observable(PlaybackStateCompat.STATE_NONE) { _, _, it ->
+        listener?.apply {
+            val stateBuilder = PlaybackStateCompat.Builder()
+            stateBuilder.setState(mState, 0, 1.0f, SystemClock.elapsedRealtime())
+            onStatusChanged(tag, stateBuilder.build())
+        }
+    }
     private val cacheLength = 1//缓存文本数量
-    var session: MediaSessionCompat? = null
     private var stopNotify = false//是否已发送停止通知标志，每次播放状态改变时重置，用于解决onStop调用多次的问题
     private var startNotify = false//是否已发送开始通知标志，每次播放状态改变时重置，用于解决onStart调用多次的问题
     var isPlaying by observable(false) { _, _, value ->
@@ -33,7 +36,6 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         }
     }
     val isFinished get() = current >= list.size - 1
-    val handle: Handler = Handler(context.mainLooper)
 
     init {
         tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -42,34 +44,29 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
                 speak(current + cacheLength + 1)
                 if (isFinished) {
                     isPlaying = false
-                    handle.post {
-                        listener?.onFinish(tag)
-                    }
+                    mState = PlaybackStateCompat.STATE_NONE
                 }
             }
 
             override fun onError(p0: String) {
+                mState = PlaybackStateCompat.ERROR_CODE_APP_ERROR
             }
 
             override fun onStop(utteranceId: String?, interrupted: Boolean) {
                 if (stopNotify) return
                 stopNotify = true
-                handle.post {
-                    listener?.onPause(tag)
-                }
+                mState = PlaybackStateCompat.STATE_PAUSED
             }
 
             override fun onStart(p0: String) {
                 listener?.onPlaying(tag, list.getOrNull(p0.toInt()), p0.toInt())
+                mState = PlaybackStateCompat.STATE_PLAYING
                 if (startNotify) return
                 startNotify = true
-                handle.post {
-                    listener?.onStart(tag)
-                }
             }
         })
-        initMedia()
     }
+
 
     /**
      * 准备播放
@@ -80,7 +77,6 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         this.tag = tag
         dealTextMessage(content)
         current = history
-        getFocus()
     }
 
     /**
@@ -91,7 +87,6 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         for (i in 0..cacheLength) {
             speak(current + i)
         }
-        getFocus()
     }
 
     /**
@@ -107,7 +102,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
     fun stop() {
         isPlaying = false
         list.clear()
-        listener?.onCancel(tag)
+        mState = PlaybackStateCompat.STATE_STOPPED
     }
 
     /**
@@ -126,109 +121,11 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
     fun release() {
         pause()
         tts.shutdown()
-        unRegisterMediaButton()
     }
 
-
-    interface TTsListener {
-        /**
-         * 播放结束
-         */
-        fun onFinish(tag: String?) {}
-
-        /**
-         * 取消播放
-         */
-        fun onCancel(tag: String?) {}
-
-        /**
-         * 开始播放
-         */
-        fun onStart(tag: String?) {}
-
-        /**
-         * 正在播放内容
-         */
+    interface TTsStatusListener {
+        fun onStatusChanged(tag: String?, status: PlaybackStateCompat)
         fun onPlaying(tag: String?, content: String?, index: Int) {}
-
-        /**
-         * 暂停
-         */
-        fun onPause(tag: String?) {}
-
-        /**
-         * 需求下一条
-         */
-        fun onNext(tag: String?) {}
-    }
-
-
-    var wait = false//是否处于等待命令状态
-    val switch = {
-        if (wait) {
-            isPlaying = !isPlaying
-            wait = false
-        }
-    }
-
-    inner class MediaSessionCallback : MediaSessionCompat.Callback() {
-
-        override fun onPlay() {
-            println("onPlay")
-        }
-
-        override fun onPause() {
-            println("onPause")
-        }
-
-        override fun onStop() {
-            println("onStop")
-        }
-
-        override fun onSkipToNext() {
-            println("onSkipToNext")
-        }
-
-    }
-
-    private fun initMedia() {
-        session = MediaSessionCompat(context, "TTS")
-        session?.setCallback(object : MediaSessionCompat.Callback() {
-            override fun onMediaButtonEvent(event: Intent): Boolean {
-                println("1")
-                val keyEvent: KeyEvent? = event.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-                if (keyEvent?.action != KeyEvent.ACTION_DOWN) {
-                    return false
-                }
-                when (keyEvent.keyCode) {//单击暂停，双击下一条
-                    KeyEvent.KEYCODE_HEADSETHOOK -> {
-                        if (wait) {
-                            listener?.onNext(tag)
-                            wait = false
-                        } else {
-                            wait = true
-                            handle.postDelayed(switch, 750)
-                        }
-                    }
-
-                }
-                return true
-            }
-        })
-        session?.setFlags(
-                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
-                        MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS or
-                        MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-//        getFocus()
-    }
-
-    /**
-     * 获取音频焦点
-     */
-    private fun getFocus() {
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
-        session?.isActive = true
     }
 
     /**
@@ -247,41 +144,4 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener, AudioManager.
         }
         tts.language = Locale.getDefault()
     }
-
-    /**
-     * 解除媒体按钮的注册
-     */
-    private fun unRegisterMediaButton() {
-        session?.let {
-            it.setCallback(null)
-            it.isActive = false
-            it.release()
-        }
-    }
-
-    override fun onAudioFocusChange(p0: Int) {
-        when (p0) {
-            // 重新获得焦点,  可做恢复播放，恢复后台音量的操作
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                isPlaying = true
-            }
-            // 永久丢失焦点除非重新主动获取，这种情况是被其他播放器抢去了焦点，  为避免与其他播放器混音，可将音乐暂停
-            AudioManager.AUDIOFOCUS_LOSS
-            -> {
-                isPlaying = false
-                release()
-            }
-            // 暂时丢失焦点，这种情况是被其他应用申请了短暂的焦点，可压低后台音量
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
-            -> {
-                isPlaying = false
-            }
-            // 短暂丢失焦点，这种情况是被其他应用申请了短暂的焦点希望其他声音能压低音量（或者关闭声音）凸显这个声音（比如短信提示音），
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK
-            -> {
-//                isPlaying = false
-            }
-        }
-    }
-
 }

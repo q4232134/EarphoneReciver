@@ -1,38 +1,41 @@
 package com.jiaozhu.earphonereciver
 
-import android.animation.ObjectAnimator
-import android.animation.TimeInterpolator
 import android.content.*
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
-import android.view.*
-import android.view.animation.DecelerateInterpolator
+import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.widget.EditText
+import androidx.annotation.Nullable
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.jiaozhu.earphonereciver.Model.Bean
-import com.jiaozhu.earphonereciver.TTsService.Companion.list
+import com.jiaozhu.earphonereciver.Model.SharedModel.dao
+import com.jiaozhu.earphonereciver.Model.SharedModel.list
 import com.jiaozhu.earphonereciver.comm.PrefSupport.Companion.context
 import com.jiaozhu.earphonereciver.comm.Preferences
 import com.jiaozhu.earphonereciver.comm.filtered
-import daoBuilder
 import dealString
 import kotlinx.android.synthetic.main.activity_list.*
-import toast
 import java.lang.reflect.Method
 import java.util.*
 
 
-class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Companion.TTSImpActivity {
+class ListActivity : AppCompatActivity(), OnItemClickListener {
     private lateinit var adapter: ListAdapter
     private lateinit var clipboard: ClipboardManager
+    private lateinit var mediaBrowser: MediaBrowserCompat
     private var mItem: MenuItem? = null
-    private var ttsService: TTsService? = null
-    private var binder: TTsService.TTSBinder? = null
-    private val dao = daoBuilder.dao()
 
     inner class CLayoutManager(context: Context) : LinearLayoutManager(context) {
         override fun onLayoutChildren(recycler: RecyclerView.Recycler?, state: RecyclerView.State) {
@@ -44,11 +47,37 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         }
     }
 
+    private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
+        override fun onConnected() {
+            mediaBrowser.sessionToken.also { token ->
+                val controller = MediaControllerCompat(this@ListActivity, token)
+                MediaControllerCompat.setMediaController(this@ListActivity, controller)
+//                controller.registerCallback(mediaCallback)
+            }
+            MediaControllerCompat.getMediaController(this@ListActivity).registerCallback(mediaCallback)
+        }
+    }
+
+    val mediaCallback = object : MediaControllerCompat.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadataCompat) {
+            println("---------------------->onMetadataChanged")
+            checkStatus()
+        }
+
+        override fun onPlaybackStateChanged(@Nullable state: PlaybackStateCompat?) {
+            println("---------------------->${state?.state}")
+            checkStatus()
+        }
+
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
         context = this
         mRecyclerView.layoutManager = CLayoutManager(this)
+        list = dao.getActiveBean()
         adapter = ListAdapter(list).apply { onItemClickListener = this@ListActivity }
         mRecyclerView.adapter = adapter
         initClipboard()
@@ -60,18 +89,12 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         mAdd.setOnLongClickListener {
             onAddLongClicked()
         }
+        mediaBrowser = MediaBrowserCompat(this, ComponentName(this, MediaPlaybackService::class.java), connectionCallbacks, null)
     }
 
     private fun onAddLongClicked(): Boolean {
         val temp = (clipboard.primaryClip?.getItemAt(0)?.text ?: "").toString()
-        if (temp.length < 50) {
-            toast("文字少于50字符！")
-            return true
-        }
-        text = temp.substring(min(temp.length, 50))
-        var flag = dealString(temp.replace("\\n", "\n"), dao)
-        if (flag)
-            adapter.notifyItemInserted(list.size - 1)
+        dealString(temp, dao)
         return true
     }
 
@@ -81,37 +104,27 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
      */
     var text = ""
 
-    private fun min(a: Int, b: Int): Int {
-        if (a > b) return b
-        return a
-    }
-
     private fun initClipboard() {
         clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.addPrimaryClipChangedListener {
             val temp = (clipboard.primaryClip?.getItemAt(0)?.text ?: "").toString()
-            if (temp.substring(min(temp.length, 50)) == text) return@addPrimaryClipChangedListener
-            text = temp.substring(min(temp.length, 50))
-            dealString(temp.replace("\\n", "\n"), dao)
+            if (dealString(temp, dao)) return@addPrimaryClipChangedListener
         }
     }
 
-    private val connection = object : ServiceConnection {
-
-        override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            binder = service as TTsService.TTSBinder
-            ttsService = binder!!.service
-            ttsService?.callback = this@ListActivity
-        }
-
-        override fun onServiceDisconnected(name: ComponentName) {
-        }
-    }
 
     private fun initService() {
         bindService(
-            Intent(this@ListActivity, TTsService::class.java),
-            connection,
+            Intent(this@ListActivity, MediaPlaybackService::class.java),
+            object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName, service: IBinder) {
+                    println("onServiceConnected")
+                }
+
+                override fun onServiceDisconnected(name: ComponentName) {
+                    println("onServiceDisconnected")
+                }
+            },
             Context.BIND_AUTO_CREATE
         )
     }
@@ -120,7 +133,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
      * 刷新UI界面
      */
     private fun freshUI() {
-
         adapter.notifyDataSetChanged()
         if (mItem == null) return
         checkStatus()
@@ -129,12 +141,19 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     override fun onStart() {
         super.onStart()
         freshUI()
-        ttsService?.callback = this
+        mediaBrowser.connect();
     }
 
-    override fun onPause() {
-        super.onPause()
-        ttsService?.callback = null
+    override fun onResume() {
+        super.onResume()
+        volumeControlStream = AudioManager.STREAM_MUSIC
+    }
+
+
+    override fun onStop() {
+        super.onStop()
+        MediaControllerCompat.getMediaController(this)?.unregisterCallback(mediaCallback)
+        mediaBrowser.disconnect()
     }
 
     private fun onAddClicked() {
@@ -145,14 +164,13 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
      * 检查播放状态并设置播放按钮文字,是否为播放状态
      */
     private fun checkStatus() {
-        if (binder == null) {
-            mItem?.title = STR_PLAY
-            return
-        }
-        if (binder!!.isPlaying) {
-            mItem?.title = STR_STOP
-        } else {
-            mItem?.title = STR_PLAY
+        val controller = MediaControllerCompat.getMediaController(this)
+        println("checkStatus------------------->${controller.playbackState.state}")
+        mItem?.title = when (controller.playbackState.state) {
+            PlaybackStateCompat.STATE_PLAYING -> STR_STOP
+            PlaybackStateCompat.STATE_STOPPED -> STR_PLAY
+            PlaybackStateCompat.STATE_PAUSED -> STR_PLAY
+            else -> STR_PLAY
         }
     }
 
@@ -175,7 +193,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val model = list[position]
-                if (binder?.tag == model.id) binder?.stop()
                 if (ItemTouchHelper.END == direction) {
                     dao.delete(model)
                 } else {
@@ -262,13 +279,13 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     }
 
 
-    override fun onItemChanged(position: Int) {
+    fun onItemChanged(position: Int) {
         checkStatus()
         if (position == -1) return
         adapter.notifyItemChanged(position)
     }
 
-    override fun onItemRemoved(position: Int) {
+    fun onItemRemoved(position: Int) {
         checkStatus()
         if (position == -1) return
         adapter.notifyItemRemoved(position)
@@ -276,15 +293,8 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
 
     override fun onDestroy() {
         super.onDestroy()
-        unbindService(connection)
     }
 
-    private fun pickUpAnimation(view: View) {
-        val animator = ObjectAnimator.ofFloat(view, "translationZ", 1f, 10f)
-        animator.interpolator = DecelerateInterpolator() as TimeInterpolator?
-        animator.duration = 300
-        animator.start()
-    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_list, menu)
@@ -296,16 +306,15 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_read -> {
-                if (binder?.isPlaying == true) binder?.pause()
-                else
-                    binder?.start()
+                val controller = MediaControllerCompat.getMediaController(this)
+                val pbState = controller.playbackState.state
+                if (pbState == PlaybackStateCompat.STATE_PLAYING) {
+                    controller.transportControls.pause()
+                } else {
+                    controller.transportControls.play()
+                }
                 return true
             }
-//            R.id.action_clear -> {
-//                val temps = list.filter { it.isFinished }
-//                list.removeAll(temps)
-//                adapter.notifyDataSetChanged()
-//            }
             R.id.action_history -> {
                 val i = Intent(this, HistoryActivity::class.java)
                 startActivity(i)
@@ -322,8 +331,5 @@ class ListActivity : AppCompatActivity(), OnItemClickListener, TTsService.Compan
         const val STR_STOP = "暂停"
     }
 
-    fun getMatchFromString(str: String) {
-        val rules = str.split("\n")
-    }
 
 }

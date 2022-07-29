@@ -26,7 +26,7 @@ object RegUtils {
     }
 }
 
-public val String?.filtered: String?
+val String?.filtered: String?
     get() {
         if (this == null) return null
         return RegUtils.filter(this, Preferences.rule)

@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat
  */
 public class ListAdapter(private val list: List<Bean>) : RecyclerView.Adapter<ViewHolder>() {
     var onItemClickListener: OnItemClickListener? = null
-    val format = SimpleDateFormat("yyyy-MM-dd")
+    private val format = SimpleDateFormat("yyyy-MM-dd")
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_content, parent, false)).apply { itemView.mText.setOnClickListener { onItemClickListener?.onItemClick(itemView, adapterPosition) } }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {

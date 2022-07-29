@@ -59,20 +59,23 @@ interface BeanDao : BaseDao<Bean> {
 }
 
 @Entity(tableName = "Bean")
-data class Bean(@PrimaryKey @ColumnInfo(name = "code") var id: String = "",
-                var title: String = "",
-                var content: String = "",
-                var ord: Int = 0,
-                var isFinished: Boolean = false,
-                var createTime: Date = Date(),
-                var history: Int = 0,
-                @Ignore var isPlaying: Boolean = false) : ViewModel() {
+data class Bean(
+    @PrimaryKey @ColumnInfo(name = "code") var id: String = "",
+    var title: String = "",
+    var content: String = "",
+    var ord: Int = 0,
+    var isFinished: Boolean = false,
+    var createTime: Date = Date(),
+    var history: Int = 0,
+    @Ignore var isPlaying: Boolean = false
+) : ViewModel() {
 
     constructor(msg: String) : this(
-            System.currentTimeMillis().toString(),
-            getHead(msg),
-            msg, -1,
-            false)
+        System.currentTimeMillis().toString(),
+        getHead(msg),
+        msg, -1,
+        false
+    )
 
 
     override fun equals(other: Any?): Boolean {
@@ -98,4 +101,6 @@ class Converters {
         return date?.time
     }
 }
+
+
 

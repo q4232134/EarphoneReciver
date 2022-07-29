@@ -7,12 +7,12 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.jiaozhu.earphonereciver.Model.Bean
-import daoBuilder
+import com.jiaozhu.earphonereciver.Model.SharedModel
+import com.jiaozhu.earphonereciver.Model.SharedModel.dao
 import kotlinx.android.synthetic.main.activity_list.*
 
 class HistoryActivity : AppCompatActivity() {
     private lateinit var adapter: ListAdapter
-    private val dao = daoBuilder.dao()
     private lateinit var list: MutableList<Bean>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,8 +44,8 @@ class HistoryActivity : AppCompatActivity() {
                     model.isFinished = false
                     model.history = 0
                     dao.replace(model)
-                    TTsService.list.add(model)
-                    dao.updateOrder(TTsService.list)
+                    SharedModel.list.add(model)
+                    dao.updateOrder(list)
                     adapter.notifyItemRemoved(position)
                 }
                 list.remove(model)

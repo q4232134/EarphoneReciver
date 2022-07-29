@@ -8,8 +8,7 @@ import androidx.core.content.ContextCompat
 import com.jiaozhu.earphonereciver.Model.AppDatabase
 import com.jiaozhu.earphonereciver.Model.Bean
 import com.jiaozhu.earphonereciver.Model.BeanDao
-import com.jiaozhu.earphonereciver.Model.Support
-import com.jiaozhu.earphonereciver.TTsService
+import com.jiaozhu.earphonereciver.Model.SharedModel.list
 import com.jiaozhu.earphonereciver.comm.filtered
 import java.util.*
 
@@ -26,9 +25,6 @@ fun Context.toast(msg: Any?, duration: Int = Toast.LENGTH_SHORT) {
  */
 val Any.logTag: String?
     get() = this::class.simpleName
-
-val Context.daoBuilder: AppDatabase
-    get() = Support.db
 
 val recordTimeMap = Hashtable<String, Long>()
 /**
@@ -77,12 +73,13 @@ fun Activity.checkPermission(requestCode: Int, vararg permissions: String, runna
  */
 fun Context.dealString(text: String?, dao: BeanDao): Boolean {
     if (text.isNullOrEmpty()) return false
+    text.replace("\\n", "\n")
     val model = Bean(text.filtered + "\n下一条")
-    if (TTsService.list.contains(model)) {
+    if (list.contains(model)) {
         toast("条目已存在")
         return false
     }
-    TTsService.list.add(model)
+    list.add(model)
     if (dao.replace(model) > 0) {
         toast("添加阅读条目成功")
         return true
