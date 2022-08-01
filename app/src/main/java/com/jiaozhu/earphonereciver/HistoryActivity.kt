@@ -6,9 +6,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.jiaozhu.earphonereciver.Model.Bean
-import com.jiaozhu.earphonereciver.Model.SharedModel
-import com.jiaozhu.earphonereciver.Model.SharedModel.dao
+import com.jiaozhu.earphonereciver.model.Bean
+import com.jiaozhu.earphonereciver.model.SharedModel
+import com.jiaozhu.earphonereciver.model.SharedModel.dao
 import kotlinx.android.synthetic.main.activity_list.*
 
 class HistoryActivity : AppCompatActivity() {

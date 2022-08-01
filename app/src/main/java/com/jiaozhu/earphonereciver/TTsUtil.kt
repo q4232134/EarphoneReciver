@@ -1,6 +1,7 @@
 package com.jiaozhu.earphonereciver
 
 import android.content.Context
+import android.os.Bundle
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -19,8 +20,10 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
     var mState: Int by observable(PlaybackStateCompat.STATE_NONE) { _, _, it ->
         listener?.apply {
             val stateBuilder = PlaybackStateCompat.Builder()
-            stateBuilder.setState(mState, 0, 1.0f, SystemClock.elapsedRealtime())
-            onStatusChanged(tag, stateBuilder.build())
+            stateBuilder.setState(it, 0, 1.0f, SystemClock.elapsedRealtime())
+            stateBuilder.setExtras(Bundle().apply { putString("tag", tag) })
+            val stateCompat = stateBuilder.build()
+            onStatusChanged(tag, stateCompat)
         }
     }
     private val cacheLength = 1//缓存文本数量

@@ -5,10 +5,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.jiaozhu.earphonereciver.Model.AppDatabase
-import com.jiaozhu.earphonereciver.Model.Bean
-import com.jiaozhu.earphonereciver.Model.BeanDao
-import com.jiaozhu.earphonereciver.Model.SharedModel.list
+import com.jiaozhu.earphonereciver.model.Bean
+import com.jiaozhu.earphonereciver.model.BeanDao
+import com.jiaozhu.earphonereciver.model.SharedModel.list
 import com.jiaozhu.earphonereciver.comm.filtered
 import java.util.*
 

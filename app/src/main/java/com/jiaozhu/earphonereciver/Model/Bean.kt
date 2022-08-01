@@ -1,4 +1,4 @@
-package com.jiaozhu.earphonereciver.Model
+package com.jiaozhu.earphonereciver.model
 
 import androidx.lifecycle.ViewModel
 import androidx.room.*

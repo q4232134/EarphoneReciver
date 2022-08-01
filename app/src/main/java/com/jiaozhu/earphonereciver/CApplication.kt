@@ -2,8 +2,8 @@ package com.jiaozhu.earphonereciver
 
 import android.app.Application
 import androidx.room.Room
-import com.jiaozhu.earphonereciver.Model.AppDatabase
-import com.jiaozhu.earphonereciver.Model.SharedModel.dao
+import com.jiaozhu.earphonereciver.model.AppDatabase
+import com.jiaozhu.earphonereciver.model.SharedModel.dao
 import com.jiaozhu.earphonereciver.comm.CrashHandler
 import com.jiaozhu.earphonereciver.comm.PrefSupport
 import java.io.File

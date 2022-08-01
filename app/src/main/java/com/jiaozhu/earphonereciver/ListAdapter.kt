@@ -4,7 +4,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.jiaozhu.earphonereciver.Model.Bean
+import com.jiaozhu.earphonereciver.model.Bean
+import com.jiaozhu.earphonereciver.model.SharedModel
 import kotlinx.android.synthetic.main.item_content.view.*
 import java.text.SimpleDateFormat
 
@@ -14,7 +15,9 @@ import java.text.SimpleDateFormat
 public class ListAdapter(private val list: List<Bean>) : RecyclerView.Adapter<ViewHolder>() {
     var onItemClickListener: OnItemClickListener? = null
     private val format = SimpleDateFormat("yyyy-MM-dd")
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_content, parent, false)).apply { itemView.mText.setOnClickListener { onItemClickListener?.onItemClick(itemView, adapterPosition) } }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
+        LayoutInflater.from(parent.context).inflate(R.layout.item_content, parent, false)
+    ).apply { itemView.mText.setOnClickListener { onItemClickListener?.onItemClick(itemView, adapterPosition) } }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val model = list[position]
@@ -22,7 +25,7 @@ public class ListAdapter(private val list: List<Bean>) : RecyclerView.Adapter<Vi
             mText.text = model.title
             mText.isEnabled = !model.isFinished
             mTime.text = format.format(model.createTime)
-            if (model.isPlaying) {
+            if (model.id == SharedModel.currentTag) {
                 mLayout.setBackgroundResource(R.drawable.bound)
             } else {
                 mLayout.background = null

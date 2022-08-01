@@ -5,7 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.jiaozhu.earphonereciver.Model.SharedModel.dao
+import com.jiaozhu.earphonereciver.model.SharedModel.dao
 import com.jiaozhu.earphonereciver.comm.PrefSupport
 import dealString
 import toast
