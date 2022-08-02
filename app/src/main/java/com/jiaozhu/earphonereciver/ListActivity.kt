@@ -23,6 +23,7 @@ import com.jiaozhu.earphonereciver.model.Bean
 import com.jiaozhu.earphonereciver.comm.PrefSupport.Companion.context
 import com.jiaozhu.earphonereciver.comm.Preferences
 import com.jiaozhu.earphonereciver.comm.filtered
+import com.jiaozhu.earphonereciver.model.SharedModel.currentTag
 import com.jiaozhu.earphonereciver.model.SharedModel.dao
 import com.jiaozhu.earphonereciver.model.SharedModel.list
 import dealString
@@ -205,6 +206,8 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
                     model.isFinished = true
                     dao.replace(model)
                 }
+                if (model.id == currentTag)
+                    MediaControllerCompat.getMediaController(this@ListActivity).transportControls.stop()
                 adapter.notifyItemRemoved(position)
                 list.removeAt(position)
             }
