@@ -2,16 +2,17 @@ package com.jiaozhu.earphonereciver
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.app.PendingIntent
+import android.content.*
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.AudioManager.OnAudioFocusChangeListener
+import android.media.MediaMetadata
 import android.os.Bundle
 import android.service.media.MediaBrowserService
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
@@ -20,9 +21,9 @@ import androidx.media.MediaBrowserServiceCompat
 import androidx.media.session.MediaButtonReceiver
 import com.jiaozhu.earphonereciver.comm.PrefSupport.Companion.context
 import com.jiaozhu.earphonereciver.model.Bean
-import com.jiaozhu.earphonereciver.model.SharedModel.currentTag
 import com.jiaozhu.earphonereciver.model.SharedModel.dao
 import com.jiaozhu.earphonereciver.model.SharedModel.list
+
 
 private const val MY_MEDIA_ROOT_ID = "media_root_id"
 
@@ -43,27 +44,21 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
-        mediaSession = MediaSessionCompat(baseContext, "LOG_TAG").apply {
-            setFlags(
-                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
-            )
+        val mbr = ComponentName(packageName, MediaButtonReceiver::class.java.name)
+        mediaSession = MediaSessionCompat(this, "LOG_TAG", mbr, null).apply {
             stateBuilder = PlaybackStateCompat.Builder()
                 .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
             setPlaybackState(stateBuilder.build())
             setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
             )
+            isActive = true
             setSessionToken(sessionToken)
             setCallback(callback2)
         }
         initTTs()
         createNotification()
         registerAudioNoisyReceiver()
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        MediaButtonReceiver.handleIntent(mediaSession, intent)
-        return super.onStartCommand(intent, flags, startId)
     }
 
 
@@ -92,7 +87,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     }
                     else -> {}
                 }
-                currentTag = (if (status.state == PlaybackStateCompat.STATE_PLAYING) current?.id else null)
                 mNotificationManager.notify(1, builder.build())
             }
 
@@ -117,6 +111,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         return BrowserRoot(MY_MEDIA_ROOT_ID, null)
     }
 
+    /**
+     * 获取媒体内容列表
+     */
     override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
         val mediaItems = emptyList<MediaBrowserCompat.MediaItem>() as MutableList
         result.sendResult(mediaItems)
@@ -126,6 +123,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private lateinit var audioFocusRequest: AudioFocusRequest
 
 
+    /**
+     * 媒体操作回调
+     */
     private val callback2 = object : MediaSessionCompat.Callback() {
         override fun onMediaButtonEvent(mediaButtonEvent: Intent): Boolean {
             println(mediaButtonEvent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT).keyCode)
@@ -144,9 +144,20 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             return super.onMediaButtonEvent(mediaButtonEvent)
         }
 
+        /**
+         * 媒体焦点改变监听器
+         */
+        private val afChangeListener = OnAudioFocusChangeListener { focusChange ->
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
+                    mediaSession.controller.transportControls.pause()
+                AudioManager.AUDIOFOCUS_GAIN -> mediaSession.controller.transportControls.play()
+            }
+        }
+
         override fun onPlay() {
             val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).run {
+            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setOnAudioFocusChangeListener(afChangeListener).run {
                 setAudioAttributes(AudioAttributes.Builder().run {
                     setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     build()
@@ -160,6 +171,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 tts.isPlaying = true
             }
         }
+
 
         override fun onStop() {
             tts.stop()
@@ -187,11 +199,20 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 tts.proper(id, content, history)
             }
             mediaSession.isActive = true
+            mediaSession.setMetadata(
+                MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, current?.title)
+                    .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, current?.id)
+                    .build()
+            )
         }
     }
 
+    /**
+     * 创建通知面板
+     */
     private fun createNotification() {
-        val channel = NotificationChannel(CHANNEL_ID, "阅读", NotificationManager.IMPORTANCE_LOW)
+        val channel = NotificationChannel(CHANNEL_ID, "阅读", NotificationManager.IMPORTANCE_DEFAULT)
         channel.description = "语音阅读的媒体面板"
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager?.createNotificationChannel(channel)
@@ -201,7 +222,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(mediaSession.controller.sessionActivity)
+            .setContentIntent(Intent(this, ListActivity::class.java).let { PendingIntent.getActivity(this, 0, it, 0) })
             .setDeleteIntent(
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                     this,

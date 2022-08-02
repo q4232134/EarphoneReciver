@@ -19,11 +19,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.jiaozhu.earphonereciver.model.Bean
 import com.jiaozhu.earphonereciver.comm.PrefSupport.Companion.context
 import com.jiaozhu.earphonereciver.comm.Preferences
 import com.jiaozhu.earphonereciver.comm.filtered
-import com.jiaozhu.earphonereciver.model.SharedModel.currentTag
+import com.jiaozhu.earphonereciver.model.Bean
 import com.jiaozhu.earphonereciver.model.SharedModel.dao
 import com.jiaozhu.earphonereciver.model.SharedModel.list
 import dealString
@@ -60,18 +59,18 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
     }
 
 
-    var lastState: Int? = 0
     val mediaCallback = object : MediaControllerCompat.Callback() {
         override fun onMetadataChanged(metadata: MediaMetadataCompat) {
             checkStatus()
+            adapter.currentTag = metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID)
         }
 
         override fun onPlaybackStateChanged(@Nullable state: PlaybackStateCompat?) {
-            if (state == null || lastState == state?.state) return
-            lastState = state.state
+            if (state == null || adapter.lastState == state?.state) return
+            adapter.lastState = state.state
             val tag = state.extras!!.getString("tag")
             val index = list.indexOfFirst { it.id == tag }
-            when (lastState) {
+            when (adapter.lastState) {
                 PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.STATE_STOPPED, PlaybackStateCompat.STATE_PAUSED -> onItemChanged(index)
                 PlaybackStateCompat.STATE_NONE -> onItemRemoved(index)
                 else -> {}
@@ -173,7 +172,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
      * 检查播放状态并设置播放按钮文字,是否为播放状态
      */
     private fun checkStatus() {
-        mItem?.title = when (lastState) {
+        mItem?.title = when (adapter.lastState) {
             PlaybackStateCompat.STATE_PLAYING -> STR_STOP
             PlaybackStateCompat.STATE_STOPPED -> STR_PLAY
             PlaybackStateCompat.STATE_PAUSED -> STR_PLAY
@@ -206,7 +205,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
                     model.isFinished = true
                     dao.replace(model)
                 }
-                if (model.id == currentTag)
+                if (model.id == adapter.currentTag)
                     MediaControllerCompat.getMediaController(this@ListActivity).transportControls.stop()
                 adapter.notifyItemRemoved(position)
                 list.removeAt(position)

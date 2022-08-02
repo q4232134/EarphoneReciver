@@ -20,7 +20,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
     var mState: Int by observable(PlaybackStateCompat.STATE_NONE) { _, _, it ->
         listener?.apply {
             val stateBuilder = PlaybackStateCompat.Builder()
-            stateBuilder.setState(it, 0, 1.0f, SystemClock.elapsedRealtime())
+            stateBuilder.setState(it, current.toLong(), 1.0f, SystemClock.elapsedRealtime())
             stateBuilder.setExtras(Bundle().apply { putString("tag", tag) })
             val stateCompat = stateBuilder.build()
             onStatusChanged(tag, stateCompat)
@@ -45,6 +45,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
             override fun onDone(p0: String) {
                 current = p0.toInt()
                 speak(current + cacheLength + 1)
+//                mState = PlaybackStateCompat.STATE_PLAYING
                 if (isFinished) {
                     isPlaying = false
                     mState = PlaybackStateCompat.STATE_NONE

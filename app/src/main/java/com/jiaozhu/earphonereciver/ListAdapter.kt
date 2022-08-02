@@ -1,5 +1,6 @@
 package com.jiaozhu.earphonereciver
 
+import android.support.v4.media.session.PlaybackStateCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,8 +13,10 @@ import java.text.SimpleDateFormat
 /**
  * Created by 教主 on 2017/12/15.
  */
-public class ListAdapter(private val list: List<Bean>) : RecyclerView.Adapter<ViewHolder>() {
+class ListAdapter(private val list: List<Bean>) : RecyclerView.Adapter<ViewHolder>() {
     var onItemClickListener: OnItemClickListener? = null
+    var currentTag: String? = null
+    var lastState: Int? = 0
     private val format = SimpleDateFormat("yyyy-MM-dd")
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
         LayoutInflater.from(parent.context).inflate(R.layout.item_content, parent, false)
@@ -25,7 +28,7 @@ public class ListAdapter(private val list: List<Bean>) : RecyclerView.Adapter<Vi
             mText.text = model.title
             mText.isEnabled = !model.isFinished
             mTime.text = format.format(model.createTime)
-            if (model.id == SharedModel.currentTag) {
+            if (model.id == currentTag && lastState == PlaybackStateCompat.STATE_PLAYING) {
                 mLayout.setBackgroundResource(R.drawable.bound)
             } else {
                 mLayout.background = null
