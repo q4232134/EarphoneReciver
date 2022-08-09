@@ -17,27 +17,27 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
     private var tts: TextToSpeech = TextToSpeech(context, this)
     private val list: MutableList<String> = LinkedList()
     private var current = 0
-    var mState: Int by observable(PlaybackStateCompat.STATE_NONE) { _, _, it ->
+    val stateBuilder = PlaybackStateCompat.Builder().setActions(
+        PlaybackStateCompat.ACTION_PLAY
+                or PlaybackStateCompat.ACTION_PAUSE
+                or PlaybackStateCompat.ACTION_PLAY_PAUSE
+                or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+                or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                or PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH
+    )
+    var mState: Int by observable(PlaybackStateCompat.STATE_NONE) { _, old, it ->
+        if (old == it) return@observable
         listener?.apply {
-            val stateBuilder = PlaybackStateCompat.Builder()
-            stateBuilder.setState(it, current.toLong(), 1.0f, SystemClock.elapsedRealtime())
+            stateBuilder.setState(it, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f, SystemClock.elapsedRealtime())
             stateBuilder.setExtras(Bundle().apply { putString("tag", tag) })
-            val stateCompat = stateBuilder.build()
-            onStatusChanged(tag, stateCompat)
+            onStatusChanged(tag, stateBuilder.build())
         }
     }
+
     private val cacheLength = 1//缓存文本数量
     private var stopNotify = false//是否已发送停止通知标志，每次播放状态改变时重置，用于解决onStop调用多次的问题
     private var startNotify = false//是否已发送开始通知标志，每次播放状态改变时重置，用于解决onStart调用多次的问题
-    var isPlaying by observable(false) { _, _, value ->
-        stopNotify = false
-        startNotify = false
-        if (value) {
-            start()
-        } else {
-            pause()
-        }
-    }
+    val isPlaying: Boolean get() = mState == PlaybackStateCompat.STATE_PLAYING
     val isFinished get() = current >= list.size - 1
 
     init {
@@ -45,9 +45,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
             override fun onDone(p0: String) {
                 current = p0.toInt()
                 speak(current + cacheLength + 1)
-//                mState = PlaybackStateCompat.STATE_PLAYING
                 if (isFinished) {
-                    isPlaying = false
                     mState = PlaybackStateCompat.STATE_NONE
                 }
             }
@@ -57,16 +55,19 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
             }
 
             override fun onStop(utteranceId: String?, interrupted: Boolean) {
-                if (stopNotify) return
-                stopNotify = true
                 mState = PlaybackStateCompat.STATE_PAUSED
             }
 
             override fun onStart(p0: String) {
-                listener?.onPlaying(tag, list.getOrNull(p0.toInt()), p0.toInt())
                 mState = PlaybackStateCompat.STATE_PLAYING
-                if (startNotify) return
-                startNotify = true
+                listener?.let {
+                    stateBuilder.setState(PlaybackStateCompat.STATE_PLAYING, p0.toLong(), 1.0f)
+                    stateBuilder.setExtras(Bundle().apply {
+                        putString("tag", tag)
+                        putString("content", list.getOrNull(p0.toInt()))
+                    })
+                    it.onPlaying(tag, stateBuilder.build())
+                }
             }
         })
     }
@@ -86,7 +87,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
     /**
      * 开始
      */
-    private fun start() {
+    fun play() {
         tts.stop()
         for (i in 0..cacheLength) {
             speak(current + i)
@@ -96,7 +97,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
     /**
      * 暂停
      */
-    private fun pause() {
+    fun pause() {
         tts.stop()
     }
 
@@ -104,7 +105,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
      * 结束
      */
     fun stop() {
-        isPlaying = false
+        tts.stop()
         list.clear()
         mState = PlaybackStateCompat.STATE_STOPPED
     }
@@ -129,7 +130,7 @@ class TTsUtil(val context: Context) : TextToSpeech.OnInitListener {
 
     interface TTsStatusListener {
         fun onStatusChanged(tag: String?, status: PlaybackStateCompat)
-        fun onPlaying(tag: String?, content: String?, index: Int) {}
+        fun onPlaying(tag: String?, status: PlaybackStateCompat) {}
     }
 
     /**

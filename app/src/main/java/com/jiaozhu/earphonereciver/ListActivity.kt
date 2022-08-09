@@ -3,7 +3,6 @@ package com.jiaozhu.earphonereciver
 import android.content.*
 import android.media.AudioManager
 import android.os.Bundle
-import android.os.IBinder
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -35,6 +34,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
     private lateinit var adapter: ListAdapter
     private lateinit var clipboard: ClipboardManager
     private lateinit var mediaBrowser: MediaBrowserCompat
+    private lateinit var controller: MediaControllerCompat
     private var mItem: MenuItem? = null
 
     inner class CLayoutManager(context: Context) : LinearLayoutManager(context) {
@@ -50,11 +50,10 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
     private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
             mediaBrowser.sessionToken.also { token ->
-                val controller = MediaControllerCompat(this@ListActivity, token)
+                controller = MediaControllerCompat(this@ListActivity, token)
                 MediaControllerCompat.setMediaController(this@ListActivity, controller)
                 controller.registerCallback(mediaCallback)
             }
-            MediaControllerCompat.getMediaController(this@ListActivity).registerCallback(mediaCallback)
         }
     }
 
@@ -66,7 +65,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
         }
 
         override fun onPlaybackStateChanged(@Nullable state: PlaybackStateCompat?) {
-            if (state == null || adapter.lastState == state?.state) return
+            if (state == null || adapter.lastState == state.state) return
             adapter.lastState = state.state
             val tag = state.extras!!.getString("tag")
             val index = list.indexOfFirst { it.id == tag }
@@ -88,17 +87,18 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
         list = dao.getActiveBean()
         adapter = ListAdapter(list).apply { onItemClickListener = this@ListActivity }
         mRecyclerView.adapter = adapter
+        mediaBrowser = MediaBrowserCompat(this, ComponentName(this, MediaPlaybackService::class.java), connectionCallbacks, null)
         initClipboard()
         initDrag()
-        initService()
         mAdd.setOnClickListener {
             onAddClicked()
         }
         mAdd.setOnLongClickListener {
             onAddLongClicked()
         }
-        mediaBrowser = MediaBrowserCompat(this, ComponentName(this, MediaPlaybackService::class.java), connectionCallbacks, null)
+        mediaBrowser.connect()
     }
+
 
     private fun onAddLongClicked(): Boolean {
         val temp = (clipboard.primaryClip?.getItemAt(0)?.text ?: "").toString()
@@ -120,23 +120,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
         }
     }
 
-
-    private fun initService() {
-        bindService(
-            Intent(this@ListActivity, MediaPlaybackService::class.java),
-            object : ServiceConnection {
-                override fun onServiceConnected(name: ComponentName, service: IBinder) {
-                    println("onServiceConnected")
-                }
-
-                override fun onServiceDisconnected(name: ComponentName) {
-                    println("onServiceDisconnected")
-                }
-            },
-            Context.BIND_AUTO_CREATE
-        )
-    }
-
     /**
      * 刷新UI界面
      */
@@ -149,7 +132,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
     override fun onStart() {
         super.onStart()
         freshUI()
-        mediaBrowser.connect();
     }
 
     override fun onResume() {
@@ -160,8 +142,12 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
 
     override fun onStop() {
         super.onStop()
+//        mediaBrowser.disconnect()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
         MediaControllerCompat.getMediaController(this)?.unregisterCallback(mediaCallback)
-        mediaBrowser.disconnect()
     }
 
     private fun onAddClicked() {
@@ -299,9 +285,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
         adapter.notifyItemRemoved(position)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
 
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -314,7 +297,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_read -> {
-                val controller = MediaControllerCompat.getMediaController(this)
                 val pbState = controller.playbackState.state
                 if (pbState == PlaybackStateCompat.STATE_PLAYING) {
                     controller.transportControls.pause()
@@ -338,6 +320,5 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
         const val STR_PLAY = "播放"
         const val STR_STOP = "暂停"
     }
-
 
 }

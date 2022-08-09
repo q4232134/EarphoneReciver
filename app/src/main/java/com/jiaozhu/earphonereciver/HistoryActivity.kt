@@ -30,7 +30,8 @@ class HistoryActivity : AppCompatActivity() {
      * 初始化滑动组件
      */
     private fun initDrag() {
-        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.END or ItemTouchHelper.START) {
+        ItemTouchHelper(object :
+            ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.END or ItemTouchHelper.START) {
             override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
                 return true
             }
@@ -60,3 +61,5 @@ class HistoryActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 }
+
+data class ItemGroup(var month: String, var list: MutableList<Bean>)
