@@ -84,7 +84,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
         setContentView(R.layout.activity_list)
         context = this
         mRecyclerView.layoutManager = CLayoutManager(this)
-        list = dao.getActiveBean()
         adapter = ListAdapter(list).apply { onItemClickListener = this@ListActivity }
         mRecyclerView.adapter = adapter
         mediaBrowser = MediaBrowserCompat(this, ComponentName(this, MediaPlaybackService::class.java), connectionCallbacks, null)

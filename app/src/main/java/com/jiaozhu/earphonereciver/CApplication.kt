@@ -6,6 +6,7 @@ import com.jiaozhu.earphonereciver.model.AppDatabase
 import com.jiaozhu.earphonereciver.model.SharedModel.dao
 import com.jiaozhu.earphonereciver.comm.CrashHandler
 import com.jiaozhu.earphonereciver.comm.PrefSupport
+import com.jiaozhu.earphonereciver.model.SharedModel
 import java.io.File
 
 
@@ -17,6 +18,7 @@ class CApplication : Application() {
         super.onCreate()
         val db = Room.databaseBuilder(this, AppDatabase::class.java, "bean").allowMainThreadQueries().build()
         dao = db.dao()
+        SharedModel.list = dao.getActiveBean()
         CrashHandler.init(this, getExternalFilesDir(null)?.path + File.separator + "crash.log")
         PrefSupport.context = this
         HttpService(8888).start()
