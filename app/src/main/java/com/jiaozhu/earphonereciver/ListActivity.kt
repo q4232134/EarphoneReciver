@@ -101,7 +101,8 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
 
     private fun onAddLongClicked(): Boolean {
         val temp = (clipboard.primaryClip?.getItemAt(0)?.text ?: "").toString()
-        dealString(temp, dao)
+        if (dealString(temp, dao))
+            adapter.notifyDataSetChanged()
         return true
     }
 
@@ -283,7 +284,6 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
         if (position == -1) return
         adapter.notifyItemRemoved(position)
     }
-
 
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
