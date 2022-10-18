@@ -102,7 +102,7 @@ class ListActivity : AppCompatActivity(), OnItemClickListener {
     private fun onAddLongClicked(): Boolean {
         val temp = (clipboard.primaryClip?.getItemAt(0)?.text ?: "").toString()
         if (dealString(temp, dao))
-            adapter.notifyDataSetChanged()
+            adapter.notifyItemInserted(list.size)
         return true
     }
 
