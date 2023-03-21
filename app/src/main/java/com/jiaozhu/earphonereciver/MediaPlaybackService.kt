@@ -147,7 +147,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
      * 获取媒体内容列表
      */
     override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
-        val mediaItems = emptyList<MediaBrowserCompat.MediaItem>() as MutableList
+        val mediaItems = ArrayList<MediaBrowserCompat.MediaItem>()
         result.sendResult(mediaItems)
     }
 
